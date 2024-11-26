@@ -87,7 +87,7 @@ div.column {
 #| comment: NA
 
 crs_master = st_crs('epsg:4326')
-aoi_site   = sf::read_sf("/Users/seamus/Repos/maps/assets/inputs/chilwa_watershed_4326.shp") |>
+aoi_site   = sf::read_sf("/Users/seamus/Repos/map-templates/assets/inputs/chilwa_watershed_4326.shp") |>
   st_cast() |> st_transform(crs_master)
 bbox_site  = terrainr::add_bbox_buffer(aoi_site, 20000, "meters")
 vbox_site = vect(bbox_site)

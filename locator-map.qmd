@@ -179,7 +179,7 @@ locator_map = ggdraw() +
 #| eval: false
 #| comment: NA
 
-ggsave(locator_map, "/Users/seamus/Repos/maps/assets/outputs/03-locator-map.png")
+ggsave(locator_map, "/Users/seamus/Repos/map-templates/assets/outputs/03-locator-map.png")
 ```
 
 ![Figure 4: Locator map showing site area and location at
