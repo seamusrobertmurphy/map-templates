@@ -1,0 +1,175 @@
+---
+title: "Site Maps"
+execute:
+  echo: true
+format:
+  html:
+    toc: true
+    toc-location: right
+    highlight-style: pygments
+    page-layout: article
+
+editor_options: 
+  markdown: 
+    wrap: 60
+---
+
+```{r setup}
+#| warning: false
+#| message: false
+#| include: false
+#| echo: false
+#| comment: NA
+
+install.packages("easypackages")
+easypackages::packages(
+  "bslib", 
+  "caret", "cli", "cols4all", "covr", "cowplot", 
+  "dendextend", "digest","DiagrammeR","dtwclust", "downlit", 
+  "e1071", "exactextractr","elevatr", 
+  "FNN", "future", 
+  "gdalcubes", "gdalUtilities", "geojsonsf", "geos", "ggplot2", "ggstats", 
+  "ggspatial", "ggmap", "ggplotify", "ggpubr", "ggrepel", "giscoR", 
+  "hdf5r", "httr", "httr2", "htmltools",
+  "jsonlite", 
+  "kohonen", 
+  "leafem", "libgeos","luz","lwgeom", "leaflet", "leafgl",
+  "mapedit", "mapview", "maptiles", "methods", "mgcv", 
+  "ncdf4", "nnet", 
+  "openxlsx", "parallel", "plotly", 
+  "randomForest", "rasterVis", "raster", "Rcpp", "RcppArmadillo", 
+  "RcppCensSpatial","rayshader", "RcppEigen", "RcppParallel", 
+  "RColorBrewer", "reactable", "rgl", "rsconnect","RStoolbox", "rts", 
+  "s2", "sf", "scales", "sits","spdep", "stars", "stringr","supercells", 
+  "terra", "testthat", "tidyverse", "tidyterra","tools", 
+  "tmap", "tmaptools", "terrainr", 
+  "xgboost")
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+  error = FALSE, comment = NA, tidy.opts = list(width.cutoff = 6)) 
+options(htmltools.dir.version = FALSE, htmltools.preserve.raw = FALSE)
+mapviewOptions(fgb = FALSE)
+sf::sf_use_s2(use_s2 = FALSE)
+```
+
+```{css, echo=FALSE, class.source = 'foldable'}
+div.column {
+    display: inline-block;
+    vertical-align: top;
+    width: 50%;
+}
+
+#TOC::before {
+  content: "";
+  display: block;
+  height:200px;
+  width: 200px;
+  background-image: url('assets/outputs/01-site-map.png');
+  background-size: contain;
+  background-position: 50% 50%;
+  padding-top: 80px !important;
+  background-repeat: no-repeat;
+}
+```
+
+-   Declare aoi, extent & projection
+-   Download high-resolution basemap
+-   Customize layers & attributes
+-   Choose output format & resolution
+-   Display output map
+
+## 1. AOI's & projection
+
+```{r site-aoi}
+#| warning: false
+#| message: false
+#| eval: true
+#| echo: true
+#| comment: NA
+
+crs_master = st_crs('epsg:4326')
+aoi_site   = sf::read_sf("/Users/seamus/Repos/maps/assets/inputs/chilwa_watershed_4326.shp") |>
+  st_cast() |> st_transform(crs_master)
+bbox_site  = terrainr::add_bbox_buffer(aoi_site, 20000, "meters")
+vbox_site = vect(bbox_site)
+
+tmap::tmap_mode("view")
+tmap::tm_shape(aoi_site) +
+  tmap::tm_borders(col = "red") +
+  tmap::tm_basemap("Esri.WorldImagery")
+```
+
+Figure 2: Interactive map showing project boundary and
+ESRI's basemap
+
+## 2. Download basemap
+
+```{r site-basemap}
+#| warning: false
+#| message: false
+#| echo: true
+#| eval: true
+#| comment: NA
+
+# zoom = 12 sources basemap at scale of 1:150,000
+basemap_150k = maptiles::get_tiles(
+  bbox_site, 
+  zoom      = 10, 
+  crop      = T,
+  provider  = "OpenTopoMap"
+)
+
+tmap::tmap_mode("view")
+tmap::tm_shape(basemap_150k) + tm_rgb() + 
+  tmap::tm_shape(aoi_site) +
+  tmap::tm_borders(col="red")
+```
+
+Figure 3: Site map showing project boundary and downloaded
+basemap ('OpenTopoMap')
+
+## 3. Customize layout
+
+```{r customize-site-map}
+#| warning: false
+#| message: false
+#| echo: true
+#| eval: false
+#| comment: NA
+tmap::tmap_mode("plot")
+site_map = tmap::tm_shape(basemap_150k) + tm_rgb() + 
+  tmap::tm_shape(aoi_site) +
+  tmap::tm_borders(lwd = 1, col = "red") +
+  tmap::tm_graticules(lines=T,labels.rot=c(0,90),lwd=0.2) +
+  tmap::tm_credits("EPSG:4326", position = c("left", "bottom")) +
+  tmap::tm_scalebar(c(0, 10, 20, 40), position = c("RIGHT", "BOTTOM"), text.size = .5) +
+  tmap::tm_compass(
+    type = "4star", size = 1.5,
+    color.dark = "gray60", text.color = "gray60",
+    position = c("left", "top")
+    )
+```
+
+## 4. Save output
+
+```{r save-site-map}
+#| warning: false
+#| message: false
+#| echo: true
+#| eval: false
+#| comment: NA
+
+# `width` & `height` controls output resolution 
+# `dpi` controls size of map attributes relative to output resolution
+tmap::tmap_save(
+  site_map, "/Users/seamus/Repos/map-templates/assets/outputs/01-site-draft.png", 
+  width=15120, height=15120, asp=0, dpi=600
+  )
+```
+
+![Figure 4: Site Map rendered with customized attributes and
+resolution
+(15120x15120pixels)](assets/outputs/01-site-map.png)
+
+```{r seesion-info}
+devtools::session_info()
+```

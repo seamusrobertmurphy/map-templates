@@ -1,0 +1,59 @@
+{
+  "index.qmd": {
+    "index.html": "d7eeffbb"
+  },
+  "projects/index.qmd": {
+    "index.html": "a5b5e1af"
+  },
+  "blog/third-post/index.ipynb": {
+    "index.html": "1045e735"
+  },
+  "blog/first-post/index.qmd": {
+    "index.html": "175a7f7f"
+  },
+  "blog/second-post/index.qmd": {
+    "index.html": "de99e354"
+  },
+  "site-map.qmd": {
+    "site-map.html": "283b93ad"
+  },
+  "assets/inputs/rivers_site.qmd": {
+    "rivers_site.html": "7093a205"
+  },
+  "assets/inputs/lakes_country.qmd": {
+    "lakes_country.html": "0df6ad40"
+  },
+  "assets/inputs/chilwa_watershed_4326.qmd": {
+    "chilwa_watershed_4326.html": "ce05c919"
+  },
+  "assets/inputs/chilwa_watershed_extent.qmd": {
+    "chilwa_watershed_extent.html": "2fc16238"
+  },
+  "assets/inputs/lakes_site.qmd": {
+    "lakes_site.html": "ee88721f"
+  },
+  "assets/inputs/rivers_country.qmd": {
+    "rivers_country.html": "8fe6b8a3"
+  },
+  "assets/inputs/watershed_site.qmd": {
+    "watershed_site.html": "bcffd013"
+  },
+  "about.qmd": {
+    "about.html": "48f3ba39"
+  },
+  "projects.qmd": {
+    "projects.html": "88026a84"
+  },
+  "resume.qmd": {
+    "resume.html": "0071c391"
+  },
+  "locator-map.qmd": {
+    "locator-map.html": "3db947d5"
+  },
+  "population-map.qmd": {
+    "population-map.html": "0ade03cc"
+  },
+  "watershed-map.qmd": {
+    "watershed-map.html": "cb4734a8"
+  }
+}

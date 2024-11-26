@@ -1,0 +1,197 @@
+---
+title: "Locator Maps"
+execute:
+  echo: true
+format:
+  html:
+    toc: true
+    toc-location: right
+    highlight-style: pygments
+    page-layout: article
+
+editor_options: 
+  markdown: 
+    wrap: 60
+---
+
+```{r setup}
+#| warning: false
+#| message: false
+#| include: false
+#| echo: false
+#| comment: NA
+
+install.packages("easypackages")
+easypackages::packages(
+  "bslib", 
+  "caret", "cli", "cols4all", "covr", "cowplot", 
+  "dendextend", "digest","DiagrammeR","dtwclust", "downlit", 
+  "e1071", "exactextractr","elevatr", 
+  "FNN", "future", 
+  "gdalcubes", "gdalUtilities", "geojsonsf", "geos", "ggplot2", "ggstats", 
+  "ggspatial", "ggmap", "ggplotify", "ggpubr", "ggrepel", "giscoR", 
+  "hdf5r", "httr", "httr2", "htmltools",
+  "jsonlite", 
+  "kohonen", 
+  "leafem", "libgeos","luz","lwgeom", "leaflet", "leafgl",
+  "mapedit", "mapview", "maptiles", "methods", "mgcv", 
+  "ncdf4", "nnet", 
+  "openxlsx", 
+  "parallel", "plotly", 
+  "randomForest", "rasterVis", "raster", "Rcpp", "RcppArmadillo", 
+  "RcppCensSpatial","rayshader", "RcppEigen", "RcppParallel", 
+  "RColorBrewer", "reactable", "rgl", "rsconnect","RStoolbox", "rts", 
+  "s2", "sf", "scales", "sits","spdep", "stars", "stringr","supercells", 
+  "terra", "testthat", "tidyverse", "tidyterra","tools", 
+  "tmap", "tmaptools", "terrainr", 
+  "xgboost"
+  )
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+  error = FALSE, comment = NA, tidy.opts = list(width.cutoff = 6)) 
+options(htmltools.dir.version = FALSE, htmltools.preserve.raw = FALSE)
+mapviewOptions(fgb = FALSE)
+sf::sf_use_s2(use_s2 = FALSE)
+```
+
+```{css, echo=FALSE, class.source = 'foldable'}
+div.column {
+    display: inline-block;
+    vertical-align: top;
+    width: 50%;
+}
+
+#TOC::before {
+  content: "";
+  display: block;
+  height:200px;
+  width: 200px;
+  background-image: url('assets/outputs/03-locator-map.png');
+  background-size: contain;
+  background-position: 50% 50%;
+  padding-top: 80px !important;
+  background-repeat: no-repeat;
+}
+```
+
+-   Declare aoi, extent & projection
+-   Download basemaps
+-   Customize multiple-map layout
+-   Display map output
+
+## 1. AOI's & projection
+
+```{r locator-aoi}
+#| warning: false
+#| message: false
+#| echo: true
+#| eval: true
+#| comment: NA
+
+crs_master = st_crs('epsg:4326')
+aoi_site   = sf::read_sf("./assets/inputs/chilwa_watershed_4326.shp") |>
+  st_cast() |> st_transform(crs_master)
+aoi_country = giscoR::gisco_get_countries(country = "Malawi", resolution = "3") |>
+  st_cast() |> st_transform(crs_master)
+aoi_region = giscoR::gisco_get_countries(
+  country = c("Malawi", "Zambia", "Tanzania", "Mozambique"), resolution = "3") |>
+  st_cast() |> st_transform(crs_master)
+
+bbox_site  = terrainr::add_bbox_buffer(aoi_site, 20000, "meters")
+bbox_country = terrainr::add_bbox_buffer(aoi_country, 40000, "meters")
+bbox_region = terrainr::add_bbox_buffer(aoi_region, 80000, "meters")
+
+vbox_site = vect(bbox_site)
+vbox_region = vect(bbox_region)
+vbox_country = terra::vect(terra::ext(vect(aoi_country)) * 1.3)
+terra::crs(vbox_country) <- "epsg:4326"
+
+# Interactive map mode: "view" 
+tmap::tmap_mode("view")
+tmap::tm_shape(vbox_country) +
+  tmap::tm_borders(lwd = 2, col = "green") +
+  tmap::tm_shape(aoi_region) +
+  tmap::tm_borders(lwd = 1, col = "blue") +
+  tmap::tm_shape(aoi_site) +
+  tmap::tm_borders(lwd = 2, col = "red")
+```
+
+Figure 2: Interactive map showing site boundary, national
+borders, and national bounding box
+
+## 2. Download basemap
+
+```{r locator-basemap}
+#| warning: false
+#| message: false
+#| echo: true
+#| eval: false
+#| comment: NA
+
+# zoom = 8 returns scale of 1:2,000,000
+basemap_4m = maptiles::get_tiles(
+  bbox_region, 
+  zoom      = 8, 
+  crop      = T,
+  provider  = "CartoDB.Positron"
+)
+
+tmap::tmap_mode("plot")
+country_map = tmap::tm_shape(vbox_country) + tm_borders(lwd = 0.0, col = "black") +
+  tmap::tm_shape(basemap_4m) + tm_rgb(alpha=0.2) + 
+  tmap::tm_shape(aoi_site) + tm_borders(lwd=2, col = "red", fill="#e28672", fill_alpha=0.5) +
+  tmap::tm_shape(aoi_region) + tm_borders(lwd = 0.5, col = "black") +
+  tmap::tm_compass(type="4star", size=1.1, color.dark = "gray60", text.color="gray60",position=c("LEFT", "TOP")
+    ) 
+
+tmap::tmap_save(
+  country_map, "/Users/seamus/Repos/map-templates/assets/outputs/02-country-map.png")
+country_map
+```
+
+![Figure 3: Interactive map showing site boundary, national
+borders, and downloaded
+basemap.](assets/outputs/02-country-map.png)
+
+## 3. Customize layout
+
+```{r customize-locator-map}
+#| warning: false
+#| message: false
+#| echo: true
+#| eval: false
+#| comment: NA
+
+main_map = tmap::tmap_grob(site_map)
+inset_map = tmap::tmap_grob(country_map)
+
+locator_map = ggdraw() +
+  draw_plot(main_map) +
+  draw_plot(inset_map, x = -0.39, y=0.4, height = 0.45)
+```
+
+## 4. Save output
+
+```{r output-map}
+#| warning: false
+#| message: false
+#| echo: true
+#| eval: false
+#| comment: NA
+
+ggsave(locator_map, "/Users/seamus/Repos/maps/assets/outputs/03-locator-map.png")
+```
+
+![Figure 4: Locator map showing site area and location at
+1:4,000,000 & 1:150,000
+scales](assets/outputs/03-locator-map.png)
+
+```{r save-locator-map}
+#| warning: false
+#| message: false
+#| echo: true
+#| eval: true
+#| comment: NA
+
+devtools::session_info()
+```

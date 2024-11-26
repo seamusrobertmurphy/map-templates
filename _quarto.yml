@@ -1,0 +1,56 @@
+project:
+  type: website
+
+website:
+  title: "Map Templates"
+  open-graph: true # https://quarto.org/docs/websites/website-tools.html#open-graph
+  page-footer: "Made with ❤️ and Quarto"
+  navbar:
+    title: "Map Templates"
+    search: true
+    right:
+      - text: "Home"
+        href: index.qmd
+      - text: "Site Maps"
+        href: site-map.qmd
+      - text: "Locator Maps"
+        href: locator-map.qmd
+      - text: "Watershed Maps"
+        href: watershed-map.qmd
+      - text: "Population Maps"
+        href: population-map.qmd
+    tools:
+      - icon: github
+        menu:
+          - text: Source Code
+            href: https://github.com/seamusrobertmurphy
+          - text: Report a Bug
+            href: https://github.com/seamusrobertmurphy
+      - icon: linkedin
+        href: https://linkedin.com/in/seamusrobertmurphy'
+      
+  sidebar:
+      pinned: true
+      style: "docked"
+      collapse-level: 1
+      contents:
+      - text: "Home"
+        href: index.qmd
+      - text: "Site Maps"
+        href: site-map.qmd
+      - text: "Locator Maps"
+        href: locator-map.qmd
+      - text: "Watershed Maps"
+        href: watershed-map.qmd
+      - text: "Population Maps"
+        href: population-map.qmd
+      - section: "About"
+        contents:
+          - text: "Resume"
+            href: about.qmd
+          - text: "Projects"
+            href: projects.qmd
+            
+format:
+  html:
+    theme: [cosmo, styles.scss]
