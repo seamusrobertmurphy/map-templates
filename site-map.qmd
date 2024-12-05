@@ -45,7 +45,7 @@ easypackages::packages(
   "tmap", "tmaptools", "terrainr", 
   "xgboost")
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
-  error = FALSE, comment = NA, tidy.opts = list(width.cutoff = 6)) 
+  error = FALSE, comment = NA, tidy.opts = list(width.cutoff = 60)) 
 options(htmltools.dir.version = FALSE, htmltools.preserve.raw = FALSE)
 mapviewOptions(fgb = FALSE)
 sf::sf_use_s2(use_s2 = FALSE)
