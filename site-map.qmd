@@ -8,6 +8,7 @@ format:
     toc-location: right
     highlight-style: pygments
     page-layout: article
+engine: knitr
 
 editor_options: 
   markdown: 
@@ -21,10 +22,17 @@ editor_options:
 #| echo: false
 #| comment: NA
 
-install.packages("easypackages")
+options(repos = c(CRAN = "https://cloud.r-project.org"))
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
+  error = FALSE, comment = NA, tidy.opts = list(width.cutoff = 60)) 
+options(htmltools.dir.version = FALSE, htmltools.preserve.raw = FALSE)
+
+#install.packages("easypackages")
+#pak::pkg_install(c(
+#libs = c(
 easypackages::packages(
   "bslib", 
-  "caret", "cli", "cols4all", "covr", "cowplot", 
+  "cols4all", "covr", "cowplot", 
   "dendextend", "digest","DiagrammeR","dtwclust", "downlit", 
   "e1071", "exactextractr","elevatr", 
   "FNN", "future", 
@@ -43,11 +51,15 @@ easypackages::packages(
   "s2", "sf", "scales", "sits","spdep", "stars", "stringr","supercells", 
   "terra", "testthat", "tidyverse", "tidyterra","tools", 
   "tmap", "tmaptools", "terrainr", 
-  "xgboost")
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
-  error = FALSE, comment = NA, tidy.opts = list(width.cutoff = 60)) 
-options(htmltools.dir.version = FALSE, htmltools.preserve.raw = FALSE)
-mapviewOptions(fgb = FALSE)
+  "xgboost",
+  prompt = F)
+
+#installed_libs <- libs %in% rownames(installed.packages())
+#if(any(installed_libs == F)){install.packages(libs[!installed_libs])}
+#invisible(lapply(libs, library, character.only = T))
+
+#lib = .libPaths()[[1L]], upgrade = F, ask = F, dependencies = T)
+#mapviewOptions(fgb = FALSE)
 sf::sf_use_s2(use_s2 = FALSE)
 ```
 
@@ -86,11 +98,11 @@ div.column {
 #| echo: true
 #| comment: NA
 
-crs_master = st_crs('epsg:4326')
-aoi_site   = sf::read_sf("/Users/seamus/Repos/map-templates/assets/inputs/chilwa_watershed_4326.shp") |>
-  st_cast() |> st_transform(crs_master)
+crs_master = sf::st_crs('epsg:4326')
+aoi_site   = sf::read_sf("./assets/inputs/chilwa_watershed_4326.shp") |>
+  sf::st_cast() |> sf::st_transform(crs_master)
 bbox_site  = terrainr::add_bbox_buffer(aoi_site, 20000, "meters")
-vbox_site = vect(bbox_site)
+vbox_site = terra::vect(bbox_site)
 
 tmap::tmap_mode("view")
 tmap::tm_shape(aoi_site) +
@@ -119,7 +131,7 @@ basemap_150k = maptiles::get_tiles(
 )
 
 tmap::tmap_mode("view")
-tmap::tm_shape(basemap_150k) + tm_rgb() + 
+tmap::tm_shape(basemap_150k) + tmap::tm_rgb() + 
   tmap::tm_shape(aoi_site) +
   tmap::tm_borders(col="red")
 ```
@@ -136,17 +148,17 @@ basemap ('OpenTopoMap')
 #| eval: false
 #| comment: NA
 tmap::tmap_mode("plot")
-site_map = tmap::tm_shape(basemap_150k) + tm_rgb() + 
+site_map = tmap::tm_shape(basemap_150k) + tmap::tm_rgb() + 
   tmap::tm_shape(aoi_site) +
   tmap::tm_borders(lwd = 1, col = "red") +
   tmap::tm_graticules(lines=T,labels.rot=c(0,90),lwd=0.2) +
   tmap::tm_credits("EPSG:4326", position = c("left", "bottom")) +
-  tmap::tm_scalebar(c(0, 10, 20, 40), position = c("RIGHT", "BOTTOM"), text.size = .5) +
+  tmap::tm_scale_bar(c(0, 10, 20, 40), position = c("RIGHT", "BOTTOM"), text.size = .5) +
   tmap::tm_compass(
     type = "4star", size = 1.5,
     color.dark = "gray60", text.color = "gray60",
     position = c("left", "top")
-    )
+    ) # some functions deprecated & may need updating (tm_scale_bar() | tm_scalebar())
 ```
 
 ## 4. Save output

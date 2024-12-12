@@ -54,3 +54,4 @@ website:
 format:
   html:
     theme: [cosmo, styles.scss]
+engine: knitr
