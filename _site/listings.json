@@ -8,13 +8,13 @@
       "/site-map.html",
       "/watershed-map.html",
       "/index.html",
-      "/assets/inputs/lakes_site.html",
+      "/assets/inputs/rivers_site.html",
       "/assets/inputs/lakes_country.html",
       "/assets/inputs/chilwa_watershed_4326.html",
       "/assets/inputs/chilwa_watershed_extent.html",
-      "/assets/inputs/rivers_site.html",
-      "/assets/inputs/watershed_site.html",
-      "/assets/inputs/rivers_country.html"
+      "/assets/inputs/lakes_site.html",
+      "/assets/inputs/rivers_country.html",
+      "/assets/inputs/watershed_site.html"
     ]
   },
   {

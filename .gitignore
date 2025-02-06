@@ -4,3 +4,5 @@
 .Ruserdata
 
 /.quarto/
+/assets/inputs/
+.DS_Store

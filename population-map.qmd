@@ -21,7 +21,7 @@ editor_options:
 #| echo: false
 #| comment: NA
 
-install.packages("easypackages")
+#install.packages("easypackages")
 easypackages::packages(
   "bslib",
   "caret", "cli", "cols4all", "covr", "cowplot",
@@ -44,9 +44,8 @@ easypackages::packages(
   "s2", "sf", "scales", "sits", "spdep", "stars", "stringr", "supercells",
   "terra", "testthat", "tidyverse", "tidyterra", "tools",
   "tmap", "tmaptools", "terrainr",
-  "xgboost"
-)
-
+  "xgboost", prompt=T)
+  
 knitr::opts_chunk$set(
   echo = TRUE, message = FALSE, warning = FALSE,
   error = FALSE, comment = NA, tidy.opts = list(width.cutoff = 6)
@@ -117,10 +116,10 @@ tmap::tm_shape(aoi_region) +
 #| comment: NA
 
 # best 1x1km raster format (person/km^2)
-url <- "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_POP_GLOBE_R2023A/GHS_POP_E2025_GLOBE_R2023A_54009_1000/V1-0/GHS_POP_E2025_GLOBE_R2023A_54009_1000_V1_0.zip"
+#url <- "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_POP_GLOBE_R2023A/GHS_POP_E2025_GLOBE_R2023A_54009_1000/V1-0/GHS_POP_E2025_GLOBE_R2023A_54009_1000_V1_0.zip"
 # file_name = "GHS_POP_E2025_GLOBE_R2023A_54009_1000_V1_0.tif"
 # download.file(url = url, path = getwd(), destfile = file_name)
-pop = terra::rast("/Users/seamus/Repos/datasets/population/GHS_POP_E2030_GLOBE_R2023A_54009_1000_V1_0/GHS_POP_E2030_GLOBE_R2023A_54009_1000_V1_0.tif")
+pop = terra::rast("~/repos/datasets/population/GHS_POP_E2025_GLOBE_R2023A_54009_1000_V1_0.tif")
 pop = terra::project(pop, "EPSG:4326") # reproject to fix NAs
 pop = terra::crop(pop, aoi_country, snap = "in", mask = T)
 names(pop)[1] <- "density_km" # number of persons per sq kilometer

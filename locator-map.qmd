@@ -21,7 +21,7 @@ editor_options:
 #| echo: false
 #| comment: NA
 
-install.packages("easypackages")
+#install.packages("easypackages")
 easypackages::packages(
   "bslib", 
   "caret", "cli", "cols4all", "covr", "cowplot", 
@@ -103,8 +103,8 @@ bbox_region = terrainr::add_bbox_buffer(aoi_region, 80000, "meters")
 
 vbox_site = vect(bbox_site)
 vbox_region = vect(bbox_region)
-vbox_country = terra::vect(terra::ext(vect(aoi_country)) * 1.3)
-terra::crs(vbox_country) <- "epsg:4326"
+vbox_country = terra::vect(terra::ext(vect(aoi_country)) * 1.3) |> sf::st_as_sf()
+sf::st_crs(vbox_country) <- "epsg:4326" 
 
 # Interactive map mode: "view" 
 tmap::tmap_mode("view")

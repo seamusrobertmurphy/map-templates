@@ -41,7 +41,7 @@ easypackages::packages(
   "hdf5r", "httr", "httr2", "htmltools",
   "jsonlite", 
   "kohonen", 
-  "leafem", "libgeos","luz","lwgeom", "leaflet", "leafgl",
+  "leaflet.providers", "leafem", "libgeos","luz","lwgeom", "leaflet", "leafgl",
   "mapedit", "mapview", "maptiles", "methods", "mgcv", 
   "ncdf4", "nnet", 
   "openxlsx", "parallel", "plotly", 
@@ -115,7 +115,7 @@ ESRI's basemap
 
 ## 2. Download basemap
 
-```{r site-basemap}
+```{r site-basemap, cache=T}
 #| warning: false
 #| message: false
 #| echo: true
@@ -137,7 +137,7 @@ tmap::tm_shape(basemap_150k) + tmap::tm_rgb() +
 ```
 
 Figure 3: Site map showing project boundary and downloaded
-basemap ('OpenTopoMap')
+basemap `OpenTopoMap`
 
 ## 3. Customize layout
 
