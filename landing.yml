@@ -1,5 +1,5 @@
 - title: Site Maps
-  path: /Users/seamus/Repos/map-templates/site-map.qmd
+  path: ./site-map.qmd
   image: assets/outputs/01-site-draft.png
   description: >
     A fieldwork sitemap to help users navigate a site, marking key locations, 
@@ -8,7 +8,7 @@
   date: 2024-11-10
   
 - title: Locator Maps
-  path: /Users/seamus/Repos/map-templates/locatar-map.qmd
+  path: ./locatar-map.qmd
   image: assets/outputs/03-locator-map.png
   description: >
     A locator map showing the geographic position of a field site within its 
@@ -17,7 +17,7 @@
   date: 2024-11-15
 
 - title: Watershed Maps
-  path: /Users/seamus/Repos/map-templates/watershed-map.qmd
+  path: ./watershed-map.qmd
   image: assets/outputs/06-watershed-3D.png
   description: >
     A 3D watershed map illustrating the terrain and water flow of a watershed sub-basin, 
@@ -26,7 +26,7 @@
   date: 2024-11-20
 
 - title: Population Maps
-  path: /Users/seamus/Repos/map-templates/population-map.qmd
+  path: ./population-map.qmd
   image: assets/outputs/04-population-map.png
   description: >
     A population density map representing the distribution of people, 
