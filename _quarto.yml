@@ -4,7 +4,6 @@ project:
 website:
   title: "Map Templates"
   open-graph: true # https://quarto.org/docs/websites/website-tools.html#open-graph
-  page-footer: "Made with ❤️ and Quarto"
   navbar:
     title: "Map Templates"
     search: true
@@ -27,7 +26,7 @@ website:
           - text: Report a Bug
             href: https://github.com/seamusrobertmurphy
       - icon: linkedin
-        href: https://linkedin.com/in/seamusrobertmurphy'
+        href: https://linkedin.com/in/seamusrobertmurphy
       
   sidebar:
       pinned: true
