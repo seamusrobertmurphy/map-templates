@@ -17,7 +17,7 @@ editor_options:
 ```{r setup}
 #| warning: false
 #| message: false
-#| include: false
+#| include: true
 #| echo: false
 #| comment: NA
 
@@ -32,7 +32,7 @@ easypackages::packages(
   "ggspatial", "ggmap", "ggplotify", "ggpubr", "ggrepel", "giscoR", 
   "hdf5r", "httr", "httr2", "htmltools",
   "jsonlite", 
-  "kohonen", 
+  "kohonen", "knitr",
   "leafem", "libgeos","luz","lwgeom", "leaflet", "leafgl",
   "mapedit", "mapview", "maptiles", "methods", "mgcv", 
   "ncdf4", "nnet", 
@@ -40,7 +40,7 @@ easypackages::packages(
   "parallel", "plotly", 
   "randomForest", "rasterVis", "raster", "Rcpp", "RcppArmadillo", 
   "RcppCensSpatial","rayshader", "RcppEigen", "RcppParallel", 
-  "RColorBrewer", "reactable", "rgl", "rsconnect","RStoolbox", "rts", 
+  "RColorBrewer", "reactable", "rgl", "rmarkdown", "rsconnect","RStoolbox", "rts", 
   "s2", "sf", "scales", "sits","spdep", "stars", "stringr","supercells", 
   "terra", "testthat", "tidyverse", "tidyterra","tools", 
   "tmap", "tmaptools", "terrainr", 

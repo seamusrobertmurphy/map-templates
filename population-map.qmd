@@ -28,7 +28,7 @@ easypackages::packages(
   "dendextend", "digest", "DiagrammeR", "dtwclust", "downlit",
   "e1071", "exactextractr", "elevatr",
   "FNN", "future",
-  "gdalcubes", "gdalUtilities", "geojsonsf", "geos", "ggplot2", "ggstats",
+  "gdalUtilities", "geojsonsf", "geos", "ggplot2", "ggstats",
   "ggspatial", "ggmap", "ggplotify", "ggpubr", "ggrepel", "giscoR",
   "hdf5r", "httr", "httr2", "htmltools",
   "jsonlite",
@@ -37,10 +37,10 @@ easypackages::packages(
   "mapedit", "mapview", "maptiles", "methods", "mgcv",
   "ncdf4", "nnet",
   "openxlsx",
-  "parallel", "plotly",
+  "parallel", "plotly", "proj4", "PROJ",
   "randomForest", "rasterVis", "raster", "Rcpp", "RcppArmadillo",
   "RcppCensSpatial", "rayshader", "RcppEigen", "RcppParallel",
-  "RColorBrewer", "reactable", "rgl", "rsconnect", "RStoolbox", "rts",
+  "RColorBrewer", "reactable", "rgl", "reproj", "rsconnect", "RStoolbox", "rts",
   "s2", "sf", "scales", "sits", "spdep", "stars", "stringr", "supercells",
   "terra", "testthat", "tidyverse", "tidyterra", "tools",
   "tmap", "tmaptools", "terrainr",
@@ -109,20 +109,45 @@ tmap::tm_shape(aoi_region) +
 ## 2. Download population data
 
 ```{r pop-input}
+#| comment: NA
 #| warning: false
 #| message: false
+#| error: false
 #| echo: true
-#| eval: true
-#| comment: NA
+#| eval: false
 
-# best 1x1km raster format (person/km^2)
+# Suitable global population data (1x1km resolution is easy convert to pp/km^2)
 #url <- "https://jeodpp.jrc.ec.europa.eu/ftp/jrc-opendata/GHSL/GHS_POP_GLOBE_R2023A/GHS_POP_E2025_GLOBE_R2023A_54009_1000/V1-0/GHS_POP_E2025_GLOBE_R2023A_54009_1000_V1_0.zip"
 # file_name = "GHS_POP_E2025_GLOBE_R2023A_54009_1000_V1_0.tif"
 # download.file(url = url, path = getwd(), destfile = file_name)
-pop = terra::rast("~/repos/datasets/population/GHS_POP_E2025_GLOBE_R2023A_54009_1000_V1_0.tif")
+pop = terra::rast("../datasets/POP/GHS_POP_E2025_GLOBE_R2023A_54009_1000_V1_0.tif")
 pop = terra::project(pop, "EPSG:4326") # reproject to fix NAs
 pop = terra::crop(pop, aoi_country, snap = "in", mask = T)
 names(pop)[1] <- "density_km" # number of persons per sq kilometer
+
+tmap::tm_shape(aoi_country) +
+  tmap::tm_borders(lwd = 0) +
+  tmap::tm_shape(pop) +
+  tm_raster(
+    style           = "fixed",
+    alpha           = 1,
+    palette         = "OrRd",
+    title           = "People/Km^2",
+    breaks          = c(0, 0.01, 10, 100, 200, 1000, 2000, 50000)
+  )
+
+raster::writeRaster(pop, "../datasets/POP/GHG_POP_Malawi_4326.tif", overwrite=T)
+```
+
+```{r pop-vis-hidden}
+#| comment: NA
+#| warning: false
+#| message: false
+#| error: false
+#| echo: false
+#| eval: true
+
+pop = terra::rast("../datasets/POP/GHG_POP_Malawi_4326.tif")
 
 tmap::tm_shape(aoi_country) +
   tmap::tm_borders(lwd = 0) +

@@ -17,13 +17,3 @@ about:
       href: https://github.com/seamusrobertmurphy
 ---
 
-::: {#hero-heading}
-
-## Education 
-
-University of London | PhD in Social Anthropology | 2015
-
-## Experience
-
-:::
-

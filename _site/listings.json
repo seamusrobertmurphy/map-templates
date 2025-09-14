@@ -6,6 +6,7 @@
       "/population-map.html",
       "/about.html",
       "/site-map.html",
+      "/stream.html",
       "/watershed-map.html",
       "/index.html",
       "/assets/inputs/rivers_site.html",
@@ -21,6 +22,7 @@
     "listing": "/index.html",
     "items": [
       "/site-map.html",
+      "/locator-map.html",
       "/watershed-map.html",
       "/population-map.html"
     ]

@@ -16,6 +16,22 @@ website:
         href: locator-map.qmd
       - text: "Watershed Maps"
         href: watershed-map.qmd
+      - text: "Riparian Maps"
+        href: stream-map.qmd 
+      - text: "Elevation Maps"
+        href: elevation-map.qmd         
+      - text: "Slope Maps"
+        href: slope-map.qmd 
+      - text: "Aspect Maps"
+        href: aspect-map.qmd 
+      - text: "Terrain Ruggedness Maps"
+        href: tri-map.qmd 
+      - text: "Precipitation Maps"
+        href: precip-map.qmd 
+      - text: "Mean Temperature Maps"
+        href: temp-map.qmd 
+      - text: "Drought Severity Maps"
+        href: drought-map.qmd 
       - text: "Population Maps"
         href: population-map.qmd
     tools:
