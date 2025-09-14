@@ -90,7 +90,7 @@ div.column {
 #| warning: false
 #| message: false
 #| echo: true
-#| eval: true
+#| eval: false
 #| comment: NA
 
 aoi_country = geodata::gadm(
@@ -108,8 +108,8 @@ sf::st_write(aoi_states, "./assets/SHP/aoi_states.shp", delete_dsn = T)
 crs_master = sf::st_crs(aoi_country) 
 
 # --------------------------------------------------------- #
-# Not best practice, but for declaring and transforming crs #
-# crs_master <- sf::st_crs("epsg:4326")
+# Avoid if necessary, but if need to declare & transforming #
+#         crs_master <- sf::st_crs("epsg:4326")
 # --------------------------------------------------------- #
 
 aoi_site   = sf::read_sf(
