@@ -6,3 +6,5 @@
 /.quarto/
 /assets/inputs/
 .DS_Store
+*.shp
+.shp
