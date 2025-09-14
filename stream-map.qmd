@@ -22,7 +22,7 @@ editor_options:
 #| comment: NA
 
 #install.packages("easypackages")
-easypackages::packages(
+pacman::p_load(
   "bslib",
   "caret", "cli", "cols4all", "covr", "cowplot",
   "dendextend", "digest", "DiagrammeR", "dtwclust", "downlit",
@@ -53,6 +53,9 @@ knitr::opts_chunk$set(
   error = FALSE, comment = NA, tidy.opts = list(width.cutoff = 6)
 )
 options(htmltools.dir.version = FALSE, htmltools.preserve.raw = FALSE)
+tmap::tmap_options(component.autoscale=F,
+  max.raster = c(plot = 800000, view = 8000000))
+
 mapviewOptions(fgb = FALSE)
 sf::sf_use_s2(use_s2 = FALSE)
 ```
@@ -84,7 +87,7 @@ div.column {
 -   Render 3D map
 -   Save output
 
-## 1. AOI's & projection
+## 1. AOI's & projection[^1]
 
 ```{r pop-aoi}
 #| warning: false
@@ -92,47 +95,326 @@ div.column {
 #| echo: true
 #| eval: false
 #| comment: NA
+library(sf)
 
-aoi_country = geodata::gadm(
+aoi_00 = geodata::gadm(
   country="CAN", level=0, 
-  path="./assets/SHP/aoi_country.shp") |> 
+  path="./assets/SHP/") |> 
   sf::st_as_sf()
 
-aoi_states  = geodata::gadm(
+aoi_01  = geodata::gadm(
   country="CAN", level=1, 
-  path="./assets/SHP/aoi_states.shp") |> 
+  path="./assets/SHP/") |> 
   sf::st_as_sf()
 
-sf::st_write(aoi_country, "./assets/SHP/aoi_country.shp", delete_dsn = T)
-sf::st_write(aoi_states, "./assets/SHP/aoi_states.shp", delete_dsn = T)
+aoi_02  = geodata::gadm(
+  country="CAN", level=2, 
+  path="./assets/SHP/") |> 
+  sf::st_as_sf()
+
+aoi_03  = geodata::gadm(
+  country="CAN", level=3, 
+  path="./assets/SHP/") |> 
+  sf::st_as_sf()
+
+sf::st_write(aoi_00, "./assets/SHP/aoi_00.shp", delete_dsn = T)
+sf::st_write(aoi_01, "./assets/SHP/aoi_01.shp", delete_dsn = T)
+sf::st_write(aoi_02, "./assets/SHP/aoi_02.shp", delete_dsn = T)
+sf::st_write(aoi_03, "./assets/SHP/aoi_03.shp", delete_dsn = T)
 crs_master = sf::st_crs(aoi_country) 
+# -------------------------------------------- #
+# Avoid if possible, but if reprojection needed:
+# crs_master <- sf::st_crs("epsg:4326")
+# -------------------------------------------- #
+```
 
-# --------------------------------------------------------- #
-# Avoid if necessary, but if need to declare & transforming #
-#         crs_master <- sf::st_crs("epsg:4326")
-# --------------------------------------------------------- #
+```{r watershed-api}
+#| warning: false
+#| message: false
+#| echo: true
+#| eval: false
+#| comment: NA
 
-aoi_site   = sf::read_sf(
-  "./assets/SHP/chilwa_watershed_4326.shp") |>
-  st_cast() |> st_transform(crs_master)
+aoi_00 = sf::st_read("./assets/SHP/aoi_00.shp") 
+aoi_01 = sf::st_read("./assets/SHP/aoi_01.shp") 
+aoi_02 = sf::st_read("./assets/SHP/aoi_02.shp") 
+aoi_03 = sf::st_read("./assets/SHP/aoi_03.shp") 
+names(aoi_00)
+names(aoi_01)
+names(aoi_02)
+names(aoi_03)
+unique(aoi_00$NAME_1)  
+unique(aoi_01$NAME_1)  
+unique(aoi_02$NAME_1)  
+unique(aoi_03$NAME_1)  
+dplyr::glimpse(aoi_00)
+dplyr::glimpse(aoi_01)
+dplyr::glimpse(aoi_02)
+dplyr::glimpse(aoi_03)
 
+bc_province  = aoi_01 |> dplyr::filter(NAME_1 == "British Columbia")
+bc_districts = aoi_02 |> dplyr::filter(NAME_1 == "British Columbia")
+bc_counties  = aoi_03 |> dplyr::filter(NAME_1 == "British Columbia")
+
+devtools::install_github("joelgombin/concaveman") # repo build fails
+pak::pak("joelgombin/concaveman") # pak() always figures it out
+
+island_extent = sf::st_bbox(c(
+  xmin = -129.5, ymin = 48.1, 
+  xmax = -123.0, ymax = 51.0), 
+  crs = st_crs(bc_province)) |> 
+  sf::st_as_sfc() 
+
+island_districts = aoi_02 |> 
+  dplyr::filter(NAME_1 == "British Columbia") |>
+  sf::st_filter(island_extent, .predicate=sf::st_intersects) |>
+  sf::st_union() |> 
+  concaveman::concaveman(concavity = 3) |> # sharper snapping
+  sf::st_intersection(bc_province) |> 
+  sf::st_as_sf() |>
+  sf::st_cast()
+
+island_counties = aoi_03 |> 
+  dplyr::filter(NAME_1 == "British Columbia") |>
+  sf::st_filter(island_extent, .predicate=sf::st_intersects) |>
+  sf::st_union() |> 
+  concaveman::concaveman(concavity = 3) |> # sharper smoothing
+  sf::st_intersection(bc_province) |> 
+  sf::st_as_sf() |>
+  sf::st_cast()
+
+sf::st_write(island_districts, "./assets/SHP/island_districts.shp", delete_dsn=T)
+sf::st_write(island_counties, "./assets/SHP/island_counties.shp", delete_dsn=T)
+
+library(osmdata)
+shoreline_clip <- osmdata::opq(bbox = sf::st_bbox(island_extent)) |>
+  osmdata::add_osm_feature(key = "natural", value = "coastline") |>
+  osmdata::osmdata_sf() |>
+  {\(x) x$osm_lines}() |>
+  sf::st_intersection(island_extent) |>
+  sf::st_union() |>
+  sf::st_polygonize() |>
+  sf::st_collection_extract("POLYGON") |>
+  sf::st_cast()
+
+island_districts_clip <- sf::st_intersection(island_districts, shoreline_clip)
+island_counties_clip <- sf::st_intersection(island_counties, shoreline_clip)
+sf::st_write(island_districts_clip, "./assets/SHP/island_districts_clip.shp")
+sf::st_write(island_counties_clip, "./assets/SHP/island_counties_clip.shp")
+sf::st_write(shoreline_clip, "./assets/SHP/shoreline_clip.shp")
+
+tmap::tmap_mode("view")
+tmap::tm_shape(island_counties_clip) + tm_borders(lwd=0) +
+  tmap::tm_shape(shoreline_clip) + tm_borders(col = "red", lwd=4) +
+  tmap::tm_shape(island_districts_clip) + tm_borders(col = "turquoise", lwd=22) +
+  tmap::tm_shape(island_counties_clip) + tm_borders(col = "purple", lwd=0.8)
+```
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| echo: false
+#| eval: true
+#| comment: NA
+tmap::tmap_mode("view")
+island_districts_clip = sf::st_read("./assets/SHP/island_districts_clip.shp", quiet=T)
+island_counties_clip = sf::st_read("./assets/SHP/island_counties_clip.shp", quiet=T)
+shoreline_clip = sf::st_read("./assets/SHP/shoreline_clip.shp", quiet=T)
+tmap::tm_shape(island_counties_clip) + tm_borders(lwd=0) +  
+  tmap::tm_shape(shoreline_clip) + tm_borders(col = "red", lwd=4) +
+  tmap::tm_shape(island_districts_clip) + tm_borders(col = "turquoise", lwd=22) +
+  tmap::tm_shape(island_counties_clip) + tm_borders(col = "purple", lwd=0.8)
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| comment: NA
+#| error: false
+#| eval: false
+#| echo: true
+library(maptiles)
+library(basemaps)
+library(leaflet)
+library(leaflet.providers)
+
+# ------------------------------------------------------------------- #
+# With AOI defined, we can extract a basemap to save time downstream  #
+#  Check basemap library: `leaflet.providers::get_providers()`        #
+
+basemap_500k = maptiles::get_tiles(island_districts, zoom=10, 
+  crop= T,provider="Esri.WorldStreetMap",project=T,verbose=T)
+
+basemap_250k = maptiles::get_tiles(island_districts, zoom = 11,
+  crop = T,provider = "OpenStreetMap",project=T, verbose = T)
+
+basemap_150k = maptiles::get_tiles(island_districts, zoom=12, 
+  crop= T,provider="Esri.WorldStreetMap",project=T,verbose=T)
+
+basemap_70k = maptiles::get_tiles(island_districts, zoom=13, 
+  crop= T,provider="Esri.WorldStreetMap",project=T,verbose=T)
+
+writeRaster(basemap_70k, "./assets/TIF/basemap_70k.tif", overwrite=T)
+writeRaster(basemap_150k, "./assets/TIF/basemap_150k.tif", overwrite=T)
+writeRaster(basemap_250k, "./assets/TIF/basemap_250k.tif", overwrite=T)
+writeRaster(basemap_500k, "./assets/TIF/basemap_500k.tif", overwrite=T)
+
+# ----------- #
+# Static Map  #
+tmap::tmap_mode("plot")
+tmap::tm_shape(island_counties) + tm_borders(lwd=0) +  # placeholder for zoom
+  tmap::tm_shape(basemap_500k) + tmap::tm_rgb() +
+  tmap::tm_shape(island_districts) + tm_borders(col = "turquoise", lwd=1.2) +
+  tmap::tm_shape(island_counties) + tm_borders(col = "purple", lwd=0.8) +
+  tmap::tm_graticules(lines = T, labels.rot= c(0, 90), lwd= 0.1) +
+  tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size=.5) +
+  tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("RIGHT", "top"))+
+  tmap::tm_credits(text="EPSG:4326",color="gray60",size=.5,position=c("left","BOTTOM"))+
+  tmap::tm_layout(
+    main.title        = "Island Shoreline Delineation",
+    title.position    = ("top"),
+    legend.position   = c("left", "bottom"),
+    legend.text.size  = 0.9,
+    legend.title.size = 0.9
+    ) -> tm_island_static
+  
+# --------------- #
+# Interactive Map #
+tmap::tmap_mode("view")
+tmap::tm_shape(island_counties) + tm_borders(lwd=0) +  # placeholder for framing
+  tmap::tm_shape(basemap_250k) + tmap::tm_rgb() +
+  tmap::tm_shape(island_districts) + tm_borders(col = "turquoise", lwd=1.2) +
+  tmap::tm_shape(island_counties) + tm_borders(col = "purple", lwd=0.8) +
+  #tmap::tm_graticules(lines = T, labels.rot= c(0, 90), lwd= 0.1) +
+  tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size=.5) +
+  tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("RIGHT", "top")) +
+  tmap::tm_credits(text="EPSG:4326",color="gray60",
+    size=.5,position=c("left","BOTTOM")) +
+  tmap::tm_layout(
+    main.title        = "Island Shoreline Delineation",
+    title.position    = ("top"),
+    legend.position   = c("left", "bottom"),
+    legend.text.size  = 0.9,
+    legend.title.size = 0.9
+    ) -> tm_island_live
+
+tmap::tmap_save(tm_island_static, "./assets/MAP/08-island-shoreline.png")
+#tmap::tmap_arrange(ncol=2, tm_island_live, tm_island_static)
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| comment: NA
+#| error: false
+#| eval: false
+#| echo: true
+
+tmap::tmap_mode("plot")
+tmap::tm_shape(island_counties) + tm_borders(lwd=0) +  # placeholder for zoom
+  tmap::tm_shape(basemap_500k) + tmap::tm_rgb() +
+  tmap::tm_shape(island_districts) + tm_borders(col = "turquoise", lwd=1.2) +
+  tmap::tm_shape(island_counties) + tm_borders(col = "purple", lwd=0.8) +
+  tmap::tm_graticules(lines = T, labels.rot= c(0, 90), lwd= 0.1) +
+  tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size=.5) +
+  tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("RIGHT", "top"))+
+  tmap::tm_credits(text="EPSG:4326",color="gray60",size=.5,position=c("left","BOTTOM"))+
+  tmap::tm_layout(
+    main.title        = "Island Shoreline Delineation",
+    title.position    = ("top"),
+    legend.position   = c("left", "bottom"),
+    legend.text.size  = 0.9,
+    legend.title.size = 0.9
+    ) -> tm_island_static
+  
+
+# Interactive Map #
+tmap::tmap_mode("view")
+tmap::tm_shape(island_counties) + tm_borders(lwd=0) +  # placeholder for zoom
+  tmap::tm_shape(basemap_150k) + tmap::tm_rgb() +
+  tmap::tm_shape(island_districts) + tm_borders(col = "turquoise", lwd=1.2) +
+  tmap::tm_shape(island_counties) + tm_borders(col = "purple", lwd=0.8) +
+  #tmap::tm_graticules(lines = T, labels.rot= c(0, 90), lwd= 0.1) +
+  tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size=.5) +
+  tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("RIGHT", "top")) +
+  tmap::tm_credits(text="EPSG:4326",color="gray60",
+    size=.5,position=c("left","BOTTOM")) +
+  tmap::tm_layout(
+    main.title        = "Island Shoreline Delineation",
+    title.position    = ("top"),
+    legend.position   = c("left", "bottom"),
+    legend.text.size  = 0.9,
+    legend.title.size = 0.9
+    ) -> tm_island_live
+
+tmap::tmap_save(tm_island_static, "./assets/MAP/08-island-shoreline.png")
+#tmap::tmap_arrange(ncol=2, tm_island_live, tm_island_static)
+```
+
+```{r}
+#| echo: false
+#| eval: true
+#| message: false
+#| warning: false
+#| error: false
+#| comment: NA
+
+
+basemap_70k = terra::rast("./assets/TIF/basemap_70k.tif", overwrite=T)
+basemap_150k = terra::rast("./assets/TIF/basemap_150k.tif", overwrite=T)
+basemap_250k = terra::rast("./assets/TIF/basemap_250k.tif", overwrite=T)
+basemap_500k = terra::rast("./assets/TIF/basemap_500k.tif", overwrite=T)
+
+sf::st_write(island_districts, "./assets/SHP/island_districts_clip.shp", delete_dsn=T)
+sf::st_write(island_counties, "./assets/SHP/island_counties_clip.shp", delete_dsn=T)
+sf::st_write(shoreline, "./assets/SHP/shoreline_clip.shp", delete_dsn=T)
+
+bc_province  = aoi_01 |> dplyr::filter(NAME_1 == "British Columbia")
+bc_districts = aoi_02 |> dplyr::filter(NAME_1 == "British Columbia")
+bc_counties  = aoi_03 |> dplyr::filter(NAME_1 == "British Columbia")
+
+aoi_00 = sf::st_read("./assets/SHP/aoi_00.shp") 
+aoi_01 = sf::st_read("./assets/SHP/aoi_01.shp") 
+aoi_02 = sf::st_read("./assets/SHP/aoi_02.shp") 
+aoi_03 = sf::st_read("./assets/SHP/aoi_03.shp") 
+
+```
+
+```{r}
+#| warning: false
+#| message: false
+#| echo: true
+#| eval: false
+#| comment: NA
+
+dem_site = elevatr::get_elev_raster(
+  locations = watershed_site,
+  z = 10, clip = "locations")
+
+dem_site = dem_site |>
+  terra::rast() |>
+  terra::project(crs(watershed_site))
+
+names(dem_site)[1] <- "Elevation (m asl)"
+
+tmap::tm_shape(dem_site) + tmap::tm_raster(palette = "Greens") +
+  tmap::tm_shape(rivers_site) + tm_lines(col = "steelblue") +
+  tmap::tm_shape(lakes_site) + tm_fill ("steelblue") +
+  tmap::tm_shape(watershed_site) + tm_borders(col = "red", lwd=1)
+
+
+# Robust API: https://doi-usgs.github.io/nhdplusTools/reference/download_wbd.html
+# Syntax: https://rdrr.io/cran/nhdplusTools/man/download_wbd.html
 remotes::install_github("DOI-USGS/nhdplusTools") # Debug with devtools::build() & last resort = docker image
+library(nhdplusTools)
 
-# Robust & Accurate API: https://doi-usgs.github.io/nhdplusTools/reference/download_wbd.html
-# Function Syntax: https://rdrr.io/cran/nhdplusTools/man/download_wbd.html
+11, 18, 25, 26, 27, 28
 
 aoi_country <- giscoR::gisco_get_countries(
   country = "Canada", resolution = "3") |>
   sf::st_cast() |> sf::st_transform(crs_master)
 
-tmap::tm_shape(aoi_states) + tm_borders(col = "red")
-
-# Interactive map mode: "view"
-tmap::tmap_mode("view")
-tmap::tm_shape(aoi_country) +
-  tmap::tm_borders(lwd = 1, col = "green") +
-  tmap::tm_shape(aoi_site) +
-  tmap::tm_borders(lwd = 2, col = "red")
 ```
 
 ##### Figure 1: Interactive map showing area of interest polygons (AOI)
@@ -333,3 +615,6 @@ watershed](assets/outputs/06-watershed-3D.png)
 #| eval: true
 devtools::session_info()
 ```
+
+[^1]: zoom = 11 = 1:150,000 scale -
+    <https://wiki.openstreetmap.org/wiki/Zoom_levels>

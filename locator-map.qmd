@@ -144,8 +144,7 @@ country_map = tmap::tm_shape(vbox_country) + tm_borders(lwd = 0.0, col = "black"
   tmap::tm_compass(type="4star", size=1.1, color.dark = "gray60", text.color="gray60",position=c("LEFT", "TOP")
     ) 
 
-tmap::tmap_save(
-  country_map, "/Users/seamus/Repos/map-templates/assets/outputs/02-country-map.png")
+tmap::tmap_save(country_map, "/Users/seamus/Repos/map-templates/assets/outputs/02-country-map.png")
 country_map
 ```
 
