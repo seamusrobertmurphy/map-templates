@@ -8,9 +8,7 @@
 .DS_Store
 
 *.dbf
-*.shp
 *.tif
 
 .dbf
 .tif
-.shp
