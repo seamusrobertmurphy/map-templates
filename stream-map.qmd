@@ -436,7 +436,7 @@ high_vals <- acc_values[acc_values <= 100 & acc_values >= 2]
 hist(low_vals, breaks = 10, main = "Flow Accumulation: 1-10", xlab = "Accumulation")
 hist(med_vals, breaks = 25, main = "Flow Accumulation: 1-50", xlab = "Accumulation")
 hist(high_vals, breaks = 50, main = "Flow Accumulation: 1-100", xlab = "Accumulation")
-hist(acc_subset, breaks = 500, main="Flow Accumulation (<99%)", xlab="Flow Accumulation")
+#hist(acc_subset, breaks = 500, main="Flow Accumulation (<99%)", xlab="Flow Accumulation")
 hist(log10(acc_values+1),breaks=50,main="Log10 Accumulation)", xlab="Log10 Accumulation")
 ```
 
@@ -454,6 +454,7 @@ hist(log10(acc_values+1),breaks=50,main="Log10 Accumulation)", xlab="Log10 Accum
 #download.file(url = url, path = getwd(), destfile = file_name)
 
 crs_master = "EPSG:3005"
+island_shoreline = sf::st_read("./assets/SHP/island_shoreline.shp", quiet=T)
 rivers   = sf::st_read("../datasets/HYDRO/Rivers/NAm/HydroRIVERS_v10_na.shp") |>
   dplyr::select(ORD_FLOW) |>   
   sf::st_intersection(island_shoreline) |>  
@@ -466,6 +467,16 @@ basins   = sf::st_read("../datasets/HYDRO/Basins/hybas_lake_na_lev06_v1c.shp") |
   sf::st_cast() |> 
   sf::st_transform(crs_master)
 
+lakes   = sf::st_read("../datasets/HYDRO/Lakes/HydroLAKES_polys_v10.shp") |>
+  dplyr::select(Lake_name) |>   
+  sf::st_intersection(island_shoreline) |>  
+  sf::st_cast() |> 
+  sf::st_transform(crs_master)
+
+island_shoreline = sf::st_read("./assets/SHP/island_shoreline.shp", quiet=T)|> 
+  sf::st_transform(crs_master)
+
+sf::st_write(lakes, "./assets/SHP/lakes.shp", delete_dsn=T)
 sf::st_write(basins, "./assets/SHP/basins.shp", delete_dsn=T)
 sf::st_write(rivers, "./assets/SHP/streams.shp", delete_dsn=T)
 ```
@@ -477,10 +488,68 @@ sf::st_write(rivers, "./assets/SHP/streams.shp", delete_dsn=T)
 #| eval: true
 #| echo: false
 
-basins = sf::st_read("./assets/SHP/basins.shp")
-rivers = sf::st_read("./assets/SHP/streams.shp")
+lakes = sf::st_read("./assets/SHP/basins.shp") |> st_cast("POLYGON")
+basins= sf::st_read("./assets/SHP/basins.shp") |> st_cast("MULTIPOLYGON")
+rivers= sf::st_read("./assets/SHP/streams.shp")|> st_cast("MULTILINESTRING")
+dem   = terra::rast("./assets/TIF/dem_3arc_condt.tif")
 
-mat = rayshader::raster_to_matrix(dem_condt)
+dem_matrix = rayshader::raster_to_matrix(dem)
+h <- nrow(dem)
+w <- ncol(dem)
+
+dem_matrix |>
+  rayshader::height_shade() |>
+  rayshader::add_overlay(
+    rayshader::generate_line_overlay(
+      geometry   = lakes,
+      extent     = dem,
+      heightmap  = dem_matrix,
+      color      = "#387B9C"
+      ), alphalayer = 1
+    ) |>
+  rayshader::plot_3d(
+    dem_matrix,
+    zscale       = 14,
+    solid        = T,
+    shadow       = T,
+    shadow_darkness = 2,
+    background   = "white",
+    windowsize   = c(600, 600),
+    zoom         = 0.6,
+    phi          = 40,
+    theta        = 0 
+  )
+
+  rayshader::add_overlay(
+    rayshader::generate_line_overlay(
+      geometry   = rivers,
+      extent     = dem,
+      heightmap  = dem_matrix,
+      color      = "white",
+      linewidth  = 1,
+      data_column_width = "width"
+      ), alphalayer = 1
+    )
+
+rayshader::render_highquality(
+  preview        = T,
+  light          = F,
+  lightdirection = c(135, 45),
+  lightcolor = c("white"),
+  lightaltitude = 25,
+  ambient_light = 0.1,
+  rotate_env     = 0.4,
+  intensity_env  = 0.85,
+  interactive    = F,
+  parallel       = T,
+  width          = w,
+  height         = h,
+  backgroundhigh="#FFFFFF",
+  backgroundlow="#FFFFFF"
+  )
+
+
+# ------------------------------------------------- #
 
 basins_line = rayshader::generate_polygon_overlay(
   geometry  = rivers, 
@@ -588,7 +657,7 @@ w <- ncol(dem_site)
 dem_matrix = rayshader::raster_to_matrix(dem_site)
 
 dem_matrix |>
-  rayshader:: height_shade() |>
+  rayshader::height_shade() |>
   rayshader::add_overlay(
     rayshader::generate_line_overlay(
       geometry   = rivers_strahler,
