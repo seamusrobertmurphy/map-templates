@@ -52,7 +52,7 @@ website:
           - text: "Resume"
             href: about.qmd
           - text: "Projects"
-            href: projects.qmd
+            href: projects/index.qmd
             
 format:
   html:
