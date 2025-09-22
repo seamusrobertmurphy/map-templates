@@ -4,11 +4,12 @@
     "items": [
       "/locator-map.html",
       "/population-map.html",
+      "/stream-map.html",
       "/about.html",
       "/site-map.html",
-      "/stream.html",
       "/watershed-map.html",
       "/index.html",
+      "/assets/SHP/lake_comox.html",
       "/assets/inputs/rivers_site.html",
       "/assets/inputs/lakes_country.html",
       "/assets/inputs/chilwa_watershed_4326.html",
@@ -24,6 +25,7 @@
       "/site-map.html",
       "/locator-map.html",
       "/watershed-map.html",
+      "/stream-map.html",
       "/population-map.html"
     ]
   }

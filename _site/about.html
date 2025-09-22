@@ -69,7 +69,7 @@ ul.task-list li input[type="checkbox"] {
 
 <meta property="og:title" content="Seamus Murphy – Map Templates">
 <meta property="og:description" content="Forester | Data Scientist">
-<meta property="og:image" content="assets/profile.jpg">
+<meta property="og:image" content="https://seamusrobertmurphy.quarto.pub/map-templates/assets/profile.jpg">
 <meta property="og:site_name" content="Map Templates">
 </head>
 
@@ -107,36 +107,8 @@ ul.task-list li input[type="checkbox"] {
 <span class="menu-text">Watershed Maps</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./stream-map.qmd"> 
+    <a class="nav-link" href="./stream-map.html"> 
 <span class="menu-text">Riparian Maps</span></a>
-  </li>  
-  <li class="nav-item">
-    <a class="nav-link" href="./elevation-map.qmd"> 
-<span class="menu-text">Elevation Maps</span></a>
-  </li>  
-  <li class="nav-item">
-    <a class="nav-link" href="./slope-map.qmd"> 
-<span class="menu-text">Slope Maps</span></a>
-  </li>  
-  <li class="nav-item">
-    <a class="nav-link" href="./aspect-map.qmd"> 
-<span class="menu-text">Aspect Maps</span></a>
-  </li>  
-  <li class="nav-item">
-    <a class="nav-link" href="./tri-map.qmd"> 
-<span class="menu-text">Terrain Ruggedness Maps</span></a>
-  </li>  
-  <li class="nav-item">
-    <a class="nav-link" href="./precip-map.qmd"> 
-<span class="menu-text">Precipitation Maps</span></a>
-  </li>  
-  <li class="nav-item">
-    <a class="nav-link" href="./temp-map.qmd"> 
-<span class="menu-text">Mean Temperature Maps</span></a>
-  </li>  
-  <li class="nav-item">
-    <a class="nav-link" href="./drought-map.qmd"> 
-<span class="menu-text">Drought Severity Maps</span></a>
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="./population-map.html"> 
@@ -207,6 +179,12 @@ ul.task-list li input[type="checkbox"] {
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./stream-map.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Riparian Maps</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./population-map.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Population Maps</span></a>
   </div>
@@ -241,11 +219,6 @@ ul.task-list li input[type="checkbox"] {
 <!-- margin-sidebar -->
     
 <!-- main -->
-<main class="content" id="quarto-document-content">
-
-
-
-
 <div class="quarto-about-trestles">
   <div class="about-entity">
     <img src="assets/profile.jpg" class="about-image
@@ -269,22 +242,12 @@ ul.task-list li input[type="checkbox"] {
   </a>
 </div>
   </div>
-  <div class="about-contents"><div id="hero-heading">
-<section id="education" class="level2">
-<h2 data-anchor-id="education">Education</h2>
-<p>University of London | PhD in Social Anthropology | 2015</p>
-</section>
-<section id="experience" class="level2">
-<h2 data-anchor-id="experience">Experience</h2>
-</section>
-</div></div>
+  <div class="about-contents"><main class="content" id="quarto-document-content">
+
+
+</main></div>
 </div>
-
-
-
-
-
-</main> <!-- /main -->
+ <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     const isCodeAnnotation = (el) => {
@@ -350,7 +313,7 @@ ul.task-list li input[type="checkbox"] {
     }
       var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
       var mailtoRegex = new RegExp(/^mailto:/);
-        var filterRegex = new RegExp('/' + window.location.host + '/');
+        var filterRegex = new RegExp("https:\/\/seamusrobertmurphy\.quarto\.pub\/map-templates");
       var isInternal = (href) => {
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }

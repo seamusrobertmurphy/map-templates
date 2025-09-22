@@ -110,7 +110,7 @@ tmap::tm_shape(aoi_country) +
 
 ## 2. Download hydro data
 
-```{r watershed-inputs, eval=F}
+```{r watershed-inputs}
 #| warning: false
 #| message: false
 #| echo: true
@@ -141,16 +141,7 @@ watershed_country = terra::crop(watershed, aoi_country) |>
 watershed_site = terra::crop(watershed, aoi_site) |> 
   sf::st_as_sf() |> sf::st_cast() |> sf::st_transform(crs_master)
 
-#rivers_country     = sf::st_intersection(rivers, aoi_country)
-#rivers_site        = sf::st_intersection(rivers, aoi_site)
-#lakes_country      = sf::st_intersection(lakes, aoi_country)
-#lakes_site         = sf::st_intersection(lakes, aoi_site)
-#watershed_country  = sf::st_intersection(watershed, aoi_country)
-#watershed_site     = sf::st_intersection(watershed, aoi_site)
-# reproject if NAs outputed, caution of long processing time
-# watersheds <- terra::project(watersheds, crs(aoi_site))
-
-# save extracted layers for faster runtime
+# save for faster runtime
 sf::st_write(rivers_country, "./assets/inputs/rivers_country.shp")
 sf::st_write(rivers_site, "./assets/inputs/rivers_site.shp")
 sf::st_write(lakes_country, "./assets/inputs/lakes_country.shp")
@@ -158,26 +149,26 @@ sf::st_write(lakes_site, "./assets/inputs/lakes_site.shp")
 sf::st_write(watershed_country, "./assets/inputs/watershed_country.shp")
 sf::st_write(watershed_site, "./assets/inputs/watershed_site.shp")
 
-tmap::tm_shape(rivers_site) + tm_lines(col = "steelblue") +
-  tmap::tm_shape(lakes_site) + tm_fill ("steelblue") +
-  tmap::tm_shape(watershed_site) + tm_borders(col = "red", lwd=1)
+#tmap::tm_shape(rivers_site) + tm_lines(col = "steelblue") +
+#  tmap::tm_shape(lakes_site) + tm_fill ("steelblue") +
+#  tmap::tm_shape(watershed_site) + tm_borders(col = "red", lwd=1)
 ```
 
-```{r watershed-extracted, echo=F}
+```{r watershed-extracted}
 #| warning: false
 #| message: false
 #| echo: false
 #| eval: true
 
-rivers_country = sf::st_read("./assets/inputs/rivers_country.shp") |> st_cast("LINESTRING")
-rivers_site    = sf::st_read("./assets/inputs/rivers_site.shp") |> st_cast("LINESTRING")
-lakes_country  = sf::st_read("./assets/inputs/lakes_country.shp") |> st_cast("POLYGON")
-lakes_site     = sf::st_read("./assets/inputs/lakes_site.shp") |> st_cast("POLYGON")
-watershed_site = sf::st_read("./assets/inputs/watershed_site.shp") |> st_cast("POLYGON")
+rivers_country = sf::st_read("./assets/inputs/rivers_country.shp", quiet=T) |> st_cast("LINESTRING")
+rivers_site    = sf::st_read("./assets/inputs/rivers_site.shp", quiet=T)    |> st_cast("LINESTRING")
+lakes_country  = sf::st_read("./assets/inputs/lakes_country.shp", quiet=T)  |> st_cast("POLYGON")
+lakes_site     = sf::st_read("./assets/inputs/lakes_site.shp", quiet=T)     |> st_cast("POLYGON")
+watershed_site = sf::st_read("./assets/inputs/watershed_site.shp", quiet=T) |> st_cast("POLYGON")
 
-tmap::tm_shape(rivers_site) + tm_lines(col = "steelblue") +
-  tmap::tm_shape(lakes_site) + tm_fill ("steelblue") +
-  tmap::tm_shape(watershed_site) + tm_borders(col = "red", lwd=1)
+#tmap::tm_shape(rivers_site) + tm_lines(col = "steelblue") +
+#  tmap::tm_shape(lakes_site) + tm_fill ("steelblue") +
+#  tmap::tm_shape(watershed_site) + tm_borders(col = "red", lwd=1)
 ```
 
 ##### Figure 2: Interactive map showing extracted hydrographic layers

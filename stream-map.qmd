@@ -54,7 +54,7 @@ knitr::opts_chunk$set(
   warning = F,
   comment = NA, 
   tidy.opts = list(
-    width.cutoff = 6)
+    width.cutoff = 60)
   )
 
 options(
@@ -63,7 +63,7 @@ options(
 
 tmap::tmap_options(
   component.autoscale=F,
-  max.raster = c(plot=800000, view=10000000)
+  max.raster = c(plot=8000000, view=10000000)
   )
 
 mapviewOptions(fgb = FALSE)
@@ -82,7 +82,7 @@ div.column {
   display: block;
   height:200px;
   width: 200px;
-  background-image: url('assets/outputs/06-watershed-3D.png');
+  background-image: url('assets/outputs/stream_map_high_b.png');
   background-size: contain;
   background-position: 50% 50%;
   padding-top: 80px !important;
@@ -91,9 +91,9 @@ div.column {
 ```
 
 -   Define aoi
--   Process DEM
+-   Condition DEM
 -   Delineate streams
--   Render map
+-   Render 3d map
 -   Save output
 
 ## 1. Import AOI
@@ -250,7 +250,7 @@ tm01_live
 #| warning: false
 #| error: false
 #| eval: false
-#| echo: true
+#| echo: false
 library(maptiles)
 library(basemaps)
 library(leaflet)
@@ -298,15 +298,13 @@ tmap::tmap_save(tm01, "./assets/MAP/09-shoreline-map.png")
 tm02_static
 ```
 
-### Download Basemap
-
 ```{r basemap-render}
 #| layout-ncol: 1
 #| message: false
 #| warning: false
 #| comment: NA
 #| error: false
-#| eval: true
+#| eval: false
 #| echo: false
 
 #basemap_70k = terra::rast("./assets/TIF/basemap_70k.tif")
@@ -335,8 +333,8 @@ tm03_live
 
 ## 2. Process DEM
 
-**Note:** More efficient conditioning algorithms available with `RichDEM` library [^2]
-
+**Note:** More efficient conditioning algorithms available
+with `RichDEM` library [^1]
 
 ```{r}
 #| comment: NA
@@ -344,31 +342,66 @@ tm03_live
 #| message: false
 #| eval: false
 #| echo: true
+crs_master = "EPSG:3005"
+island_shoreline = sf::st_read("./assets/SHP/island_shoreline.shp", quiet=T)
 
-# z = 12: 1-Arc Second Resolution SRTM
-# z = 11: 3-Arc Second Resolution SRTM
-# z = 10: 5-Arc Second Resolution SRTM
-#dem=elevatr::get_elev_raster(island_shoreline, z=12,clip="locations")|>terra::rast()
-#dem=elevatr::get_elev_raster(island_shoreline, z=10,clip="locations")|>terra::rast()
-dem=elevatr::get_elev_raster(island_shoreline, z=11,clip="locations")|>
-  terra::rast()|>
-  terra::project(crs_master)|>
-  terra::crop(terra::vect(island_shoreline))
+# z = 12: 1-Arc Second 
+# z = 11: 3-Arc Second 
+# z = 10: 5-Arc Second 
+dem_7arc = elevatr::get_elev_raster(island_shoreline, z=9,clip="locations")|>
+  terra::rast()|> 
+  terra::crop(terra::vect(island_shoreline)) |>  
+  terra::project(crs_master)
 
-#Process DEM by breaching & filling 
-dem_condt  = dem |> 
+#Process DEM by breaching & filling depressions & flats
+dem_condt_7arc  = dem_7arc |> 
   flowdem::breach() |>
   flowdem::fill(epsilon=T) 
   #flowdem::fill_basins() # costal basins
 
 # Calculate flow direction & accumulation
-dem_dir = dem_condt |> flowdem::dirs(mode="d8")
-dem_acc = dem_dir |> flowdem::accum(mode="d8")
+dem_dir_7arc = dem_condt_7arc |> flowdem::dirs(mode="d8")
+dem_dir_5arc = dem_condt_5arc |> flowdem::dirs(mode="d8")
+dem_acc_7arc = dem_dir_7arc |> flowdem::accum(mode="d8")
+dem_acc_5arc = dem_dir_5arc |> flowdem::accum(mode="d8")
 
-writeRaster(dem_condt, "./assets/TIF/dem_3arc_condt.tif", overwrite=T)
-writeRaster(dem_dir, "./assets/TIF/dem_3arc_dir.tif", overwrite=T)
-writeRaster(dem_acc, "./assets/TIF/dem_3arc_acc.tif", overwrite=T)
+#tmap::tm_shape(dem) + 
+#  tmap::tm_raster(
+#    col.scale = tm_scale_continuous(values = "viridis"),
+#    col.legend = tm_legend(title = "Elevation (m)", reverse = T)) + 
+#  tmap::tm_graticules(lines = T, labels.rot = c(0, 90), lwd = 0.2) +
+#  tmap::tm_scalebar(position = c("LEFT", "BOTTOM"), text.size = 0.5) + 
+#  tmap::tm_compass(color.dark="gray60",text.color="gray60")+
+#  tmap::tm_basemap("Esri.WorldImagery")
+writeRaster(dem_condt_7arc, "./assets/TIF/dem_7arc_condt.tif", overwrite=T)
+writeRaster(dem_condt_5arc, "./assets/TIF/dem_5arc_condt.tif", overwrite=T)
+writeRaster(dem_dir_7arc, "./assets/TIF/dem_7arc_dir.tif", overwrite=T)
+writeRaster(dem_dir_5arc, "./assets/TIF/dem_5arc_dir.tif", overwrite=T)
+writeRaster(dem_acc_7arc, "./assets/TIF/dem_7arc_acc.tif", overwrite=T)
+writeRaster(dem_acc_5arc, "./assets/TIF/dem_5arc_acc.tif", overwrite=T)
 ```
+
+```{r}
+#| comment: NA
+#| warning: false
+#| message: false
+#| error: false
+#| echo: false
+#| eval: false
+
+dem = terra::rast("./assets/TIF/dem_7arc_condt.tif")
+tmap::tmap_mode("plot")
+tmap::tm_shape(dem) + 
+  tmap::tm_raster(
+    col.scale = tm_scale_continuous(values = "viridis"),
+    col.legend = tm_legend(title = "Elevation (m)", reverse = T)) + 
+  tmap::tm_graticules(lines = T, labels.rot = c(0, 90), lwd = 0.2) +
+  tmap::tm_scalebar(position = c("LEFT", "BOTTOM"), text.size = 0.5) + 
+  tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("top","left"))+
+  tmap::tm_basemap("Esri.WorldImagery")
+```
+
+![](assets/MAP/elevation_map_2D.png)
 
 ## 3. Delineate Streams
 
@@ -379,7 +412,7 @@ writeRaster(dem_acc, "./assets/TIF/dem_3arc_acc.tif", overwrite=T)
 #| eval: false
 #| echo: true
 # Calculate Flow Accumulation Distribution
-par(mfrow = c(2, 3))
+par(mfrow = c(2, 2))
 thresholds <- c(1, 2, 10, 20, 50, 100)
 
 for(thresholds in c(1, 2, 10, 20, 50, 100)) {
@@ -398,7 +431,7 @@ high_vals <- acc_values[acc_values <= 100 & acc_values >= 2]
 hist(low_vals, breaks = 10, main = "Flow Accumulation: 1-10", xlab = "Accumulation")
 hist(med_vals, breaks = 25, main = "Flow Accumulation: 1-50", xlab = "Accumulation")
 hist(high_vals, breaks = 50, main = "Flow Accumulation: 1-100", xlab = "Accumulation")
-hist(acc_subset, breaks = 500, main="Flow Accumulation (<99%)", xlab="Flow Accumulation")
+#hist(acc_subset, breaks = 500, main="Flow Accumulation (<99%)", xlab="Flow Accumulation")
 hist(log10(acc_values+1),breaks=50,main="Log10 Accumulation)", xlab="Log10 Accumulation")
 
 # Delineate streams using flow accumulation
@@ -413,11 +446,11 @@ st_write(streams, "./assets/SHP/streams_100.shp", delete_dsn=T)
 #| message: false
 #| error: false
 #| echo: false
-#| eval: false
+#| eval: true
 
-par(mfrow = c(2, 3))
-dem_acc   = terra::rast("./assets/TIF/dem_3arc_acc.tif")
-dem_condt = terra::rast("./assets/TIF/dem_3arc_condt.tif")
+par(mfrow = c(2, 2))
+dem_acc   = terra::rast("./assets/TIF/dem_7arc_acc.tif")
+dem_condt = terra::rast("./assets/TIF/dem_7arc_condt.tif")
 
 acc_values <- values(dem_acc, na.rm = TRUE)
 thresholds <- c(1, 2, 10, 20, 50, 100)
@@ -440,7 +473,6 @@ hist(high_vals, breaks = 50, main = "Flow Accumulation: 1-100", xlab = "Accumula
 hist(log10(acc_values+1),breaks=50,main="Log10 Accumulation)", xlab="Log10 Accumulation")
 ```
 
-
 ```{r}
 #| comment: NA
 #| warning: false
@@ -455,19 +487,19 @@ hist(log10(acc_values+1),breaks=50,main="Log10 Accumulation)", xlab="Log10 Accum
 
 crs_master = "EPSG:3005"
 island_shoreline = sf::st_read("./assets/SHP/island_shoreline.shp", quiet=T)
-rivers   = sf::st_read("../datasets/HYDRO/Rivers/NAm/HydroRIVERS_v10_na.shp") |>
+rivers = sf::st_read("../datasets/HYDRO/Rivers/NAm/HydroRIVERS_v10_na.shp") |>
   dplyr::select(ORD_FLOW) |>   
   sf::st_intersection(island_shoreline) |>  
   sf::st_cast() |> 
   sf::st_transform(crs_master)
 
-basins   = sf::st_read("../datasets/HYDRO/Basins/hybas_lake_na_lev06_v1c.shp") |>
+basins = sf::st_read("../datasets/HYDRO/Basins/hybas_lake_na_lev06_v1c.shp") |>
   dplyr::select(HYBAS_ID) |>   
   sf::st_intersection(island_shoreline) |>  
   sf::st_cast() |> 
   sf::st_transform(crs_master)
 
-lakes   = sf::st_read("../datasets/HYDRO/Lakes/HydroLAKES_polys_v10.shp") |>
+lakes = sf::st_read("../datasets/HYDRO/Lakes/HydroLAKES_polys_v10.shp") |>
   dplyr::select(Lake_name) |>   
   sf::st_intersection(island_shoreline) |>  
   sf::st_cast() |> 
@@ -481,72 +513,95 @@ sf::st_write(basins, "./assets/SHP/basins.shp", delete_dsn=T)
 sf::st_write(rivers, "./assets/SHP/streams.shp", delete_dsn=T)
 ```
 
+## 4. Build Map
+
 ```{r}
 #| comment: NA
-#| warning: false
 #| message: false
-#| eval: true
-#| echo: false
+#| warning: false
+#| error: false
+#| eval: false
+#| echo: true
 
-lakes = sf::st_read("./assets/SHP/basins.shp") |> st_cast("POLYGON")
-basins= sf::st_read("./assets/SHP/basins.shp") |> st_cast("MULTIPOLYGON")
-rivers= sf::st_read("./assets/SHP/streams.shp")|> st_cast("MULTILINESTRING")
-dem   = terra::rast("./assets/TIF/dem_3arc_condt.tif")
-
-dem_matrix = rayshader::raster_to_matrix(dem)
+lakes = sf::st_read("./assets/SHP/lakes.shp") |> sf::st_cast("POLYGON")
+basins= sf::st_read("./assets/SHP/basins.shp") |> sf::st_cast("MULTIPOLYGON")
+rivers= sf::st_read("./assets/SHP/streams.shp")|> sf::st_cast("MULTILINESTRING")
+dem   = terra::rast("./assets/TIF/dem_7arc_condt.tif") 
 h <- nrow(dem)
 w <- ncol(dem)
 
-dem_matrix |>
-  rayshader::height_shade() |>
-  rayshader::add_overlay(
-    rayshader::generate_line_overlay(
-      geometry   = lakes,
-      extent     = dem,
-      heightmap  = dem_matrix,
-      color      = "#387B9C"
-      ), alphalayer = 1
-    ) |>
-  rayshader::plot_3d(
-    dem_matrix,
-    zscale       = 14,
-    solid        = T,
-    shadow       = T,
-    shadow_darkness = 2,
-    background   = "white",
-    windowsize   = c(600, 600),
-    zoom         = 0.6,
-    phi          = 40,
-    theta        = 0 
-  )
+matrix = rayshader::raster_to_matrix(dem) 
 
+matrix |>
+  rayshader::height_shade() |>
   rayshader::add_overlay(
     rayshader::generate_line_overlay(
       geometry   = rivers,
       extent     = dem,
-      heightmap  = dem_matrix,
-      color      = "white",
-      linewidth  = 1,
-      data_column_width = "width"
+      heightmap  = matrix,
+      color      = "turquoise",
+      linewidth  = 3,
       ), alphalayer = 1
-    )
+    ) |>
+  rayshader::plot_3d(
+    matrix,
+    zscale       = 69,
+    solid        = T,
+    shadow       = T,
+    shadow_darkness = 2,
+    background   = "white",
+    windowsize   = 800,
+    zoom         = 0.6,
+    phi          = 89.9,
+    theta        = 0 
+  )
+
+#rayshader::render_snapshot(
+#  rayvertex_lighting  = T,
+#  rayvertex_lights    = 
+#    rayvertex::directional_light(
+#      intensity       = 1.5, 
+#      color           = "#F3EEE1", 
+#      direction       = c(-1.5,1,-1.5)
+#      ),
+#  rayvertex_shadow_map= T, 
+#  software_render     = T
+#  )
+```
+
+## 5. Render Map
+
+```{r map-render}
+#| comment: NA
+#| warning: false
+#| message: false
+#| error: false
+#| eval: false
+#| echo: true
 
 rayshader::render_highquality(
-  preview        = T,
-  light          = F,
-  lightdirection = c(135, 45),
-  lightcolor = c("white"),
-  lightaltitude = 25,
-  ambient_light = 0.1,
-  rotate_env     = 0.4,
-  intensity_env  = 0.85,
-  interactive    = F,
-  parallel       = T,
-  width          = w,
-  height         = h,
+  samples           = 400, 
+  sample_method     = "sobol", 
+  parallel          = T, 
+  environment_light = "kiara_1_dawn_2k.hdr", 
+  light             = T, 
+  width             = w, 
+  height            = h,
+  preview           = T, 
+  interactive       = F,
   backgroundhigh="#FFFFFF",
   backgroundlow="#FFFFFF"
   )
+```
+
+![](assets/MAP/stream_map_high_b.png)
+
+```{r notes-render}
+#| comment: NA
+#| warning: false
+#| message: false
+#| eval: false
+#| echo: false
 
 
 # ------------------------------------------------- #
@@ -570,7 +625,6 @@ mat |> rayshader::constant_shade(color = "lightgoldenrod") |>
   rayshader::add_overlay(basins_line, alphalayer = 0.9) |>
   rayshader::add_overlay(rivers_line, alphalayer = 0.9)
 
-# plot_map()
 rayshader::plot_3d(mat, 
   zscale    = 69, 
   windowsize= 800,
@@ -591,8 +645,9 @@ rayshader::render_highquality(
   width = 2000, 
   height = 2000, 
   preview = T, 
-  interative = F
+  interactive = F
   )
+
 
 rayshader::render_snapshot(
   rayvertex_lighting = T,
@@ -602,129 +657,38 @@ rayshader::render_snapshot(
       color = "#F3EEE1", 
       direction=c(-1.5,1,-1.5)
       ),
-  rayverted_shadow_map = T, software_render =T
+  rayvertex_shadow_map = T, software_render =T
   )
-
-```
-
-```{r watershed-extracted}
-#| comment: NA
-#| warning: false
-#| message: false
-#| eval: false
-#| echo: true
-
-rivers_country = sf::st_read("./assets/inputs/rivers_country.shp")|>st_cast("LINESTRING")
-rivers_site    = sf::st_read("./assets/inputs/rivers_site.shp")   |>st_cast("LINESTRING")
-lakes_country  = sf::st_read("./assets/inputs/lakes_country.shp") |>st_cast("POLYGON")
-lakes_site     = sf::st_read("./assets/inputs/lakes_site.shp")    |>st_cast("POLYGON")
-watershed_site = sf::st_read("./assets/inputs/watershed_site.shp")|>st_cast("POLYGON")
-
-tmap::tm_shape(rivers_site) + tm_lines(col = "steelblue") +
-  tmap::tm_shape(lakes_site) + tm_fill ("steelblue") +
-  tmap::tm_shape(watershed_site) + tm_borders(col = "red", lwd=1)
-```
-
-## 5. Render map
-
-```{r watershed-render}
-#| comment: NA
-#| warning: false
-#| message: false
-#| eval: false
-#| echo: true
-
-rivers_strahler = rivers_site |>
-  dplyr::mutate(
-    width = as.numeric(
-      ORD_FLOW
-    ),
-    width = dplyr::case_when(
-      width == 3 ~ 16,
-      width == 4 ~ 14,
-      width == 5 ~ 12,
-      width == 6 ~ 10,
-      width == 7 ~ 6,
-      TRUE ~ 0
-    )
-  ) |>
-  sf::st_as_sf() |>
-  sf::st_transform(crs = "epsg:4326")
-
-h <- nrow(dem_site)
-w <- ncol(dem_site)
-
-dem_matrix = rayshader::raster_to_matrix(dem_site)
-
-dem_matrix |>
-  rayshader::height_shade() |>
-  rayshader::add_overlay(
-    rayshader::generate_line_overlay(
-      geometry   = rivers_strahler,
-      extent     = dem_site,
-      heightmap  = dem_matrix,
-      color      = "#387B9C",
-      linewidth  = rivers_strahler$width,
-      data_column_width = "width"
-      ), alphalayer = 1
-    ) |>
-  rayshader::add_overlay(
-    rayshader::generate_line_overlay(
-      geometry   = lakes_site,
-      extent     = dem_site,
-      heightmap  = dem_matrix,
-      color      = "#387B9C"
-      ), alphalayer = 1
-    ) |>
-  rayshader::plot_3d(
-    dem_matrix,
-    zscale       = 14,
-    solid        = T,
-    shadow       = T,
-    shadow_darkness = 2,
-    background   = "white",
-    windowsize   = c(600, 600),
-    zoom         = 0.6,
-    phi          = 40,
-    theta        = 0 
-  )
-```
-
-## 5. Render 3D map
-
-```{r watershed-save}
-#| eval: false
 
 rayshader::render_highquality(
-  preview        = T,
-  light          = F,
-  lightdirection = c(135, 45),
-  lightcolor = c("white"),
+  samples       = 400, 
+  sample_method = "sobol", 
+  parallel      = T, 
+  preview       = T,
+  light         = F,
+  lightdirection= c(135, 45),
+  lightcolor = c("lightgoldenrod"),
   lightaltitude = 25,
   ambient_light = 0.1,
-  rotate_env     = 0.4,
-  intensity_env  = 0.85,
-  interactive    = F,
-  parallel       = T,
-  width          = w,
-  height         = h,
-  backgroundhigh="#FFFFFF",
-  backgroundlow="#FFFFFF"
+  rotate_env    = 135,
+  intensity_env = 0.85,
+  interactive   = F,
+  parallel      = T,
+  width         = w,
+  height        = h,
+  backgroundhigh= "#FFFFFF",
+  backgroundlow = "#FFFFFF"
   )
-```
 
-![Figure 4: Three-dimensional map of Lake Chilwa
-watershed](assets/outputs/06-watershed-3D.png)
+
+```
 
 ```{r session-info}
 #| eval: true
 devtools::session_info()
 ```
 
-[^1]: zoom = 11 = 1:150,000 scale -
-    <https://wiki.openstreetmap.org/wiki/Zoom_levels>
-
-[^2]: Breach-fill algorithm by Lindsay's paper (2016)
+[^1]: Breach-fill algorithm by Lindsay's paper (2016)
     "Efficient hybrid breaching-filling sink removal methods
     for flow path enforcement in digital elevation models:
     Efficient Hybrid Sink Removal Methods for Flow Path
