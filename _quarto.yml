@@ -59,6 +59,6 @@ format:
     theme: [cosmo, styles.scss]
     fig-width: 8
     fig-height: 6
-    fig-dpi: 150  # Reduce from default 300
-    fig-format: webp  # Use more efficient format
+    fig-dpi: 150  
+    fig-format: png
 engine: knitr

@@ -1,6 +1,6 @@
 - title: Site Maps
   path: ./site-map.qmd
-  image: assets/outputs/01-site-draft.png
+  image: https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/01-site-map.png
   description: >
     A fieldwork sitemap to help users navigate a site, marking key locations, 
     boundaries, and features, during research or exploration activities.
@@ -9,7 +9,7 @@
   
 - title: Locator Maps
   path: ./locator-map.qmd
-  image: assets/outputs/03-locator-map.png
+  image: https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/03-locator-map.png
   description: >
     A locator map showing the geographic position of a field site within its 
     local and national context, helping users quickly identify its broader location.
@@ -18,7 +18,7 @@
 
 - title: Watershed Maps
   path: ./watershed-map.qmd
-  image: assets/outputs/06-watershed-3D.png
+  image: https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/06-watershed-3D.png
   description: >
     A 3D watershed map illustrating the terrain and water flow of a watershed sub-basin, 
     helping to analyze environmental impact, erosion, and resource management.
@@ -27,7 +27,7 @@
 
 - title: Ripdarian Maps
   path: ./stream-map.qmd
-  image: assets/MAP/stream_map_high_b.png
+  image: https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/MAP/stream_map_high_b.png
   description: >
     Riparian map including DEM conditioning by breaching and filling depressions and flats, and stream 
     delineation using flow direction and accumulation rendered in 3D over elevation data designed 
@@ -38,7 +38,7 @@
   
 - title: Population Maps
   path: ./population-map.qmd
-  image: assets/outputs/04-population-map.png
+  image: https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/04-population-map.png
   description: >
     A population density map representing the distribution of people, 
     highlighting densely and sparsely populated regions surrounding a field site.

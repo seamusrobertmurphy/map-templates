@@ -67,7 +67,7 @@ div.column {
   display: block;
   height:200px;
   width: 200px;
-  background-image: url('assets/outputs/04-population-map.png');
+  background-image: url('https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/04-population-map.png');
   background-size: contain;
   background-position: 50% 50%;
   padding-top: 80px !important;
@@ -218,7 +218,7 @@ map_population
 ```
 
 ![Figure 1: Population
-Map](assets/outputs/04-population-map.png)
+Map](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/04-population-map.png)
 
 ## 4. Save output
 

@@ -82,7 +82,7 @@ div.column {
   display: block;
   height:200px;
   width: 200px;
-  background-image: url('assets/outputs/stream_map_high_b.png');
+  background-image: url('https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/MAP/stream_map_high_b.png');
   background-size: contain;
   background-position: 50% 50%;
   padding-top: 80px !important;
@@ -401,7 +401,7 @@ tmap::tm_shape(dem) +
   tmap::tm_basemap("Esri.WorldImagery")
 ```
 
-![](assets/MAP/elevation_map_2D.png)
+![](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/MAP/elevation_map_2D.png)
 
 ## 3. Delineate Streams
 
@@ -594,7 +594,7 @@ rayshader::render_highquality(
   )
 ```
 
-![](assets/MAP/stream_map_high_b.png)
+![](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/MAP/stream_map_high_b.png)
 
 ```{r notes-render}
 #| comment: NA

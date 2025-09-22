@@ -68,7 +68,7 @@ div.column {
   display: block;
   height:200px;
   width: 200px;
-  background-image: url('assets/outputs/06-watershed-3D.png');
+  background-image: url('https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/06-watershed-3D.png');
   background-size: contain;
   background-position: 50% 50%;
   padding-top: 80px !important;
@@ -289,7 +289,7 @@ rayshader::render_highquality(
 ```
 
 ![Figure 4: Three-dimensional map of Lake Chilwa
-watershed](assets/outputs/06-watershed-3D.png)
+watershed](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/06-watershed-3D.png)
 
 ```{r session-info}
 #| eval: true

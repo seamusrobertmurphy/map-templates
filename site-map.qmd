@@ -22,10 +22,19 @@ editor_options:
 #| echo: false
 #| comment: NA
 
-options(repos = c(CRAN = "https://cloud.r-project.org"))
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE,
-  error = FALSE, comment = NA, tidy.opts = list(width.cutoff = 60)) 
-options(htmltools.dir.version = FALSE, htmltools.preserve.raw = FALSE)
+options(repos = c(CRAN = "https://cloud.r-project.org"),
+        htmltools.dir.version = FALSE, 
+        htmltools.preserve.raw = FALSE
+        )
+
+knitr::opts_chunk$set(
+  echo = TRUE, 
+  message = FALSE, 
+  warning = FALSE,
+  error = FALSE, 
+  comment = NA, 
+  tidy.opts = list(width.cutoff = 60)
+  ) 
 
 #install.packages("easypackages")
 #pak::pkg_install(c(
@@ -75,7 +84,7 @@ div.column {
   display: block;
   height:200px;
   width: 200px;
-  background-image: url('assets/outputs/01-site-map.png');
+  background-image: url('https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/01-site-map.png');
   background-size: contain;
   background-position: 50% 50%;
   padding-top: 80px !important;
@@ -180,7 +189,7 @@ tmap::tmap_save(
 
 ![Figure 4: Site Map rendered with customized attributes and
 resolution
-(15120x15120pixels)](assets/outputs/01-site-map.png)
+(15120x15120pixels)](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/01-site-map.png)
 
 ```{r seesion-info}
 devtools::session_info()

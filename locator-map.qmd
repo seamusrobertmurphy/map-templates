@@ -66,7 +66,7 @@ div.column {
   display: block;
   height:200px;
   width: 200px;
-  background-image: url('assets/outputs/03-locator-map.png');
+  background-image: url('https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/03-locator-map.png');
   background-size: contain;
   background-position: 50% 50%;
   padding-top: 80px !important;
@@ -150,7 +150,7 @@ country_map
 
 ![Figure 3: Interactive map showing site boundary, national
 borders, and downloaded
-basemap.](assets/outputs/02-country-map.png)
+basemap.](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/02-country-map.png)
 
 ## 3. Customize layout
 
@@ -183,7 +183,7 @@ ggsave(locator_map, "/Users/seamus/Repos/map-templates/assets/outputs/03-locator
 
 ![Figure 4: Locator map showing site area and location at
 1:4,000,000 & 1:150,000
-scales](assets/outputs/03-locator-map.png)
+scales](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/03-locator-map.png)
 
 ```{r save-locator-map}
 #| warning: false
@@ -191,6 +191,5 @@ scales](assets/outputs/03-locator-map.png)
 #| echo: true
 #| eval: true
 #| comment: NA
-
 devtools::session_info()
 ```
