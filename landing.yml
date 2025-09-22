@@ -25,6 +25,17 @@
   categories: [Mapping, Fieldwork, Operations]
   date: 2024-11-20
 
+- title: Ripdarian Maps
+  path: ./stream-map.qmd
+  image: assets/MAP/stream_map_high_b.png
+  description: >
+    Riparian map including DEM conditioning by breaching and filling depressions and flats, and stream 
+    delineation using flow direction and accumulation rendered in 3D over elevation data designed 
+    to support wetland conservation, streambank stabilization projects, and riparian vegetation
+    management strategies.
+  categories: [Mapping, Fieldwork, Operations]
+  date: 2025-09-20
+  
 - title: Population Maps
   path: ./population-map.qmd
   image: assets/outputs/04-population-map.png
