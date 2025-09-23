@@ -91,7 +91,7 @@ div.column {
 }
 ```
 
-## 1. Import AOI
+## 1. Import AOI & Hydrography
 
 ```{r aoi-import}
 #| warning: false
@@ -100,15 +100,20 @@ div.column {
 #| eval: true
 #| comment: NA
 
-crs_master = sf::st_crs('EPSG:3857')
-aoi   = sf::read_sf("./assets/inputs/chilwa_watershed_4326.shp") |>
-  sf::st_cast() |> sf::st_transform(crs_master)
+crs_master= sf::st_crs('EPSG:3857')
+rivers    = sf::st_read("./assets/inputs/rivers_site.shp", quiet=T) |> 
+  sf::st_cast("LINESTRING") |> sf::st_transform(crs_master) 
+lakes     = sf::st_read("./assets/inputs/lakes_site.shp", quiet=T)  |> 
+  sf::st_cast("POLYGON") |> sf::st_transform(crs_master)
+watershed = sf::read_sf("./assets/inputs/chilwa_watershed_4326.shp", quiet=T) |> 
+  sf::st_cast("POLYGON") |> sf::st_transform(crs_master)
 bbox_aoi  = terrainr::add_bbox_buffer(aoi, 20000, "meters")
-vbox_aoi = terra::vect(bbox_aoi)
+vbox_aoi  = terra::vect(bbox_aoi)
 
 tmap::tmap_mode("view")
-tmap::tm_shape(aoi) +
-  tmap::tm_borders(col = "red") +
+tmap::tm_shape(aoi) + tmap::tm_borders(col = "red") +
+  tmap::tm_shape(rivers) + tm_lines(col = "turquoise", lwd=0.5) +
+  tmap::tm_shape(lakes) + tm_fill("turquoise") +
   tmap::tm_basemap("Esri.WorldImagery")
 ```
 
@@ -150,6 +155,8 @@ tmap::tm_shape(dem_condt) +
   tmap::tm_raster(
     col.scale = tm_scale_continuous(values = terrain.colors(7)),
     col.legend = tm_legend(title = "Elevation (m)", reverse = T)) + 
+  tmap::tm_shape(rivers) + tm_lines(col = "steelblue") +
+  tmap::tm_shape(lakes) + tm_fill("steelblue") +
   tmap::tm_graticules(lines = T, labels.rot = c(0, 90), lwd = 0.2) +
   tmap::tm_scalebar(position = c("LEFT", "BOTTOM"), text.size = 0.5) + 
   tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("top","left"))
