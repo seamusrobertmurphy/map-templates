@@ -51,9 +51,7 @@ website:
         contents:
           - text: "Resume"
             href: about.qmd
-          - text: "Projects"
-            href: projects/index.qmd
-            
+
 format:
   html:
     theme: [cosmo, styles.scss]

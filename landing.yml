@@ -25,7 +25,7 @@
   categories: [Mapping, Fieldwork, Operations]
   date: 2024-11-20
 
-- title: Ripdarian Maps
+- title: Riparian Maps
   path: ./stream-map.qmd
   image: https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/MAP/stream_map_high_b.png
   description: >

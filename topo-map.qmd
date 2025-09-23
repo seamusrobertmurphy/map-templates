@@ -1,5 +1,5 @@
 ---
-title: "Riparian Maps"
+title: "Topography Maps"
 execute:
   echo: true
 format:
@@ -97,233 +97,19 @@ div.column {
 #| warning: false
 #| message: false
 #| echo: true
-#| eval: false
-#| comment: NA
-library(sf)
-
-aoi_00 = geodata::gadm(
-  country="CAN", level=0, 
-  path="./assets/SHP/") |> 
-  sf::st_as_sf()
-
-aoi_01  = geodata::gadm(
-  country="CAN", level=1, 
-  path="./assets/SHP/") |> 
-  sf::st_as_sf()
-
-aoi_02  = geodata::gadm(
-  country="CAN", level=2, 
-  path="./assets/SHP/") |> 
-  sf::st_as_sf()
-
-aoi_03  = geodata::gadm(
-  country="CAN", level=3, 
-  path="./assets/SHP/") |> 
-  sf::st_as_sf()
-
-# ------------ #
-# BC Albers    #
-# ------------ #
-crs_master = "EPSG:3005"
-sf::st_transform(aoi_00, crs_master)
-sf::st_transform(aoi_01, crs_master)
-sf::st_transform(aoi_02, crs_master)
-sf::st_transform(aoi_03, crs_master)
-
-sf::st_write(aoi_00, "./assets/SHP/aoi_00.shp", delete_dsn = T)
-sf::st_write(aoi_01, "./assets/SHP/aoi_01.shp", delete_dsn = T)
-sf::st_write(aoi_02, "./assets/SHP/aoi_02.shp", delete_dsn = T)
-sf::st_write(aoi_03, "./assets/SHP/aoi_03.shp", delete_dsn = T)
-```
-
-### Extract Shoreline
-
-```{r aoi-extract}
-#| warning: false
-#| message: false
-#| echo: true
-#| eval: false
-#| comment: NA
-library(osmdata)
-library(rmapshaper)
-
-bc_province = sf::st_read("./assets/SHP/aoi_01.shp", quiet=T) |>
-  sf::st_make_valid() |> dplyr::filter(NAME_1 == "British Columbia") 
-bc_districts = sf::st_read("./assets/SHP/aoi_02.shp", quiet=T)|>
-  sf::st_make_valid() |> dplyr::filter(NAME_1 == "British Columbia")
-bc_counties = sf::st_read("./assets/SHP/aoi_03.shp", quiet=T)|>
-  sf::st_make_valid() |> dplyr::filter(NAME_1 == "British Columbia")
-
-# ---------------------------  #
-# Note: BBOX needs CRS forcing #
-island_extent = sf::st_bbox(c(
-  xmin = -129.5, ymin = 48.1, 
-  xmax = -123.0, ymax = 51.0), 
-  crs = st_crs(4326)) |> 
-  sf::st_as_sfc()
-island_extent_sf = sf::st_as_sf(island_extent) 
-
-shoreline_input <- osmdata::opq(bbox = sf::st_bbox(island_extent_sf)) |>
-  osmdata::add_osm_feature(key = "natural", value = "coastline") |>
-  osmdata::osmdata_sf() |> {\(x) x$osm_lines}() |>
-  sf::st_intersection(island_extent_sf) |>
-  sf::st_union() |>
-  sf::st_polygonize() |>
-  sf::st_collection_extract("POLYGON")
-
-# `rmapshaper::ms_clip()` requires perimiter polygon shell only
-shoreline_shell <- shoreline_input %>%
-  sf::st_union() %>%
-  sf::st_as_sf()|> 
-  sf::st_transform(crs_master)
-
-island_shoreline <- bc_districts %>%
-  sf::st_filter(shoreline_input, .predicate = st_intersects) %>%
-  rmapshaper::ms_dissolve() %>% 
-  rmapshaper::ms_clip(shoreline_shell)|> 
-  sf::st_transform(crs_master)
-
-island_districts <- bc_districts %>%
-  sf::st_filter(shoreline_input, .predicate = st_intersects) %>%
-  rmapshaper::ms_simplify(keep = 0.95) %>%        
-  rmapshaper::ms_clip(shoreline_shell)|> 
-  sf::st_transform(crs_master)             
-
-island_counties <- bc_counties %>%
-  sf::st_filter(shoreline_input, .predicate = st_intersects) %>%
-  rmapshaper::ms_simplify(keep = 0.95) %>%        
-  rmapshaper::ms_clip(shoreline_shell)|> 
-  sf::st_transform(crs_master)             
-
-sf::st_write(island_districts, "./assets/SHP/island_districts.shp", delete_dsn=T)
-sf::st_write(island_counties, "./assets/SHP/island_counties.shp", delete_dsn=T)
-sf::st_write(island_shoreline, "./assets/SHP/island_shoreline.shp", delete_dsn=T)
-sf::st_write(shoreline_input, "./assets/SHP/shoreline_input.shp", delete_dsn=T)
-sf::st_write(shoreline_shell, "./assets/SHP/shoreline_shell.shp", delete_dsn=T)
-
-tmap::tmap_mode("view")
-tmap::tm_shape(island_counties) + tm_borders(lwd=0) +
-  tmap::tm_shape(island_shoreline) + tm_borders(col = "black", lwd=4) +
-  tmap::tm_shape(island_districts) + tm_borders(col = "purple", lwd=1.5) +
-  tmap::tm_shape(island_counties) + tm_borders(col = "yellow", lwd=0.5) +
-  tmap::tm_basemap("Esri.WorldImagery") -> tm01_live
-tm01_live
-```
-
-```{r aoi-render}
-#| warning: false
-#| message: false
-#| error: false
-#| echo: false
 #| eval: true
 #| comment: NA
 
-crs_master = "EPSG:3005"
-island_districts = sf::st_read("./assets/SHP/island_districts.shp", quiet=T)|> 
-  sf::st_transform(crs_master)
-island_counties  = sf::st_read("./assets/SHP/island_counties.shp", quiet=T)|> 
-  sf::st_transform(crs_master) 
-island_shoreline = sf::st_read("./assets/SHP/island_shoreline.shp", quiet=T)|> 
-  sf::st_transform(crs_master)
-shoreline_input  = sf::st_read("./assets/SHP/shoreline_input.shp", quiet=T)|> 
-  sf::st_transform(crs_master)
-shoreline_shell  = sf::st_read("./assets/SHP/shoreline_shell.shp", quiet=T)|> 
-  sf::st_transform(crs_master)
+crs_master = sf::st_crs('EPSG:3857')
+aoi   = sf::read_sf("./assets/inputs/chilwa_watershed_4326.shp") |>
+  sf::st_cast() |> sf::st_transform(crs_master)
+bbox_aoi  = terrainr::add_bbox_buffer(aoi, 20000, "meters")
+vbox_aoi = terra::vect(bbox_aoi)
 
 tmap::tmap_mode("view")
-tmap::tm_shape(island_counties) + tm_borders(lwd=0) +
-  tmap::tm_shape(island_shoreline) + tm_borders(col = "black", lwd=4) +
-  tmap::tm_shape(island_districts) + tm_borders(col = "purple", lwd=1.5) +
-  tmap::tm_shape(island_counties) + tm_borders(col = "yellow", lwd=0.5) +
-  tmap::tm_basemap("Esri.WorldImagery")  -> tm01_live
-tm01_live
-```
-
-```{r basemap-save}
-#| comment: NA
-#| message: false
-#| warning: false
-#| error: false
-#| eval: false
-#| echo: false
-library(maptiles)
-library(basemaps)
-library(leaflet)
-library(leaflet.providers)
-
-# ------------------------------------------- #
-# Saving basemap to accelerate downstream     #
-# ------------------------------------------- #
-basemap_500k = maptiles::get_tiles(island_districts, zoom=10, 
-  crop = T,provider="Esri.WorldStreetMap",project=T,verbose=T)|> 
-  terra::project(crs_master)
-
-basemap_250k = maptiles::get_tiles(island_districts, zoom = 11,
-  crop = T,provider = "OpenStreetMap",project=T, verbose = T)|> 
-  terra::project(crs_master)
-
-basemap_150k = maptiles::get_tiles(island_districts, zoom=12, 
-  crop= T,provider="Esri.WorldStreetMap",project=T,verbose=T)|> 
-  terra::project(crs_master)
-
-basemap_70k = maptiles::get_tiles(island_districts, zoom=13, 
-  crop= T,provider="Esri.WorldStreetMap",project=T,verbose=T)|> 
-  terra::project(crs_master)
-
-writeRaster(basemap_70k, "./assets/TIF/basemap_70k.tif", overwrite=T)
-writeRaster(basemap_150k, "./assets/TIF/basemap_150k.tif", overwrite=T)
-writeRaster(basemap_250k, "./assets/TIF/basemap_250k.tif", overwrite=T)
-writeRaster(basemap_500k, "./assets/TIF/basemap_500k.tif", overwrite=T)
-
-# Static Map  #
-tmap::tmap_mode("view")
-tmap::tm_shape(island_counties) + tmap::tm_borders(lwd=0) +  
-  tmap::tm_shape(basemap_150k) + tmap::tm_rgb() +
-  tmap::tm_shape(island_districts) + tmap::tm_borders(col = "turquoise", lwd=1.2) +
-  tmap::tm_shape(island_counties) + tmap::tm_borders(col = "purple", lwd=0.8) +
-  tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size=.5) +
-  tmap::tm_compass(color.dark="gray60",position=c("RIGHT", "top"))+
-  tmap::tm_credits(text="EPSG:3005",color="gray60",size=.5,position=c("left","BOTTOM")) +
-  tmap::tm_layout(
-    main.title = "Island Shoreline Delineation",
-    title.position  = ("top"),
-    legend.position = c("left", "bottom") -> tm02_static
-  
-tmap::tmap_save(tm01, "./assets/MAP/09-shoreline-map.png")
-tm02_static
-```
-
-```{r basemap-render}
-#| layout-ncol: 1
-#| message: false
-#| warning: false
-#| comment: NA
-#| error: false
-#| eval: false
-#| echo: false
-
-#basemap_70k = terra::rast("./assets/TIF/basemap_70k.tif")
-basemap_150k = terra::rast("./assets/TIF/basemap_150k.tif")
-#basemap_250k = terra::rast("./assets/TIF/basemap_250k.tif")
-#basemap_500k = terra::rast("./assets/TIF/basemap_500k.tif")
-
-tmap::tmap_mode("view")
-tmap::tm_shape(island_counties) + tmap::tm_borders(lwd=0) +  # framing placeholder
-  tmap::tm_shape(basemap_150k) +  tmap::tm_rgb() +
-  tmap::tm_shape(island_districts) + tmap::tm_borders(col = "turquoise", lwd=1.2) +
-  tmap::tm_shape(island_counties) +  tmap::tm_borders(col = "purple", lwd=0.8) +
-  tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size=.5) +
-  tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("RIGHT", "top"))+
-  tmap::tm_credits(text="EPSG:3005",color="gray60",size=.5,position=c("left","BOTTOM"))+
-  tmap::tm_layout(
-    main.title        = "Shoreline Delineation (1:150,000)",
-    title.position    = ("top"),
-    legend.position   = c("left", "bottom"),
-    legend.text.size  = 0.9,
-    legend.title.size = 0.9
-    ) -> tm03_live
-
-tm03_live
+tmap::tm_shape(aoi) +
+  tmap::tm_borders(col = "red") +
+  tmap::tm_basemap("Esri.WorldImagery")
 ```
 
 ## 2. Process DEM
@@ -337,43 +123,36 @@ with `RichDEM` library [^1]
 #| message: false
 #| eval: false
 #| echo: true
-crs_master = "EPSG:3005"
-island_shoreline = sf::st_read("./assets/SHP/island_shoreline.shp", quiet=T)
 
 # z = 12: 1-Arc Second 
 # z = 11: 3-Arc Second 
 # z = 10: 5-Arc Second 
-dem_7arc = elevatr::get_elev_raster(island_shoreline, z=9,clip="locations")|>
-  terra::rast()|> 
-  terra::crop(terra::vect(island_shoreline)) |>  
-  terra::project(crs_master)
+
+dem = elevatr::get_elev_raster(aoi, z=10,clip="locations")|>
+  terra::rast() |> terra::crop(terra::vect(aoi)) 
 
 #Process DEM by breaching & filling depressions & flats
-dem_condt_7arc  = dem_7arc |> 
+dem_condt  = dem |> 
   flowdem::breach() |>
   flowdem::fill(epsilon=T) 
-  #flowdem::fill_basins() # costal basins
+  #flowdem::fill_basins() # costal drainage basins
 
 # Calculate flow direction & accumulation
-dem_dir_7arc = dem_condt_7arc |> flowdem::dirs(mode="d8")
-dem_dir_5arc = dem_condt_5arc |> flowdem::dirs(mode="d8")
-dem_acc_7arc = dem_dir_7arc |> flowdem::accum(mode="d8")
-dem_acc_5arc = dem_dir_5arc |> flowdem::accum(mode="d8")
+dem_dir = dem_condt |> flowdem::dirs(mode="d8")
+dem_acc = dem_dir   |> flowdem::accum(mode="d8")
 
-#tmap::tm_shape(dem) + 
-#  tmap::tm_raster(
-#    col.scale = tm_scale_continuous(values = "viridis"),
-#    col.legend = tm_legend(title = "Elevation (m)", reverse = T)) + 
-#  tmap::tm_graticules(lines = T, labels.rot = c(0, 90), lwd = 0.2) +
-#  tmap::tm_scalebar(position = c("LEFT", "BOTTOM"), text.size = 0.5) + 
-#  tmap::tm_compass(color.dark="gray60",text.color="gray60")+
-#  tmap::tm_basemap("Esri.WorldImagery")
-writeRaster(dem_condt_7arc, "./assets/TIF/dem_7arc_condt.tif", overwrite=T)
-writeRaster(dem_condt_5arc, "./assets/TIF/dem_5arc_condt.tif", overwrite=T)
-writeRaster(dem_dir_7arc, "./assets/TIF/dem_7arc_dir.tif", overwrite=T)
-writeRaster(dem_dir_5arc, "./assets/TIF/dem_5arc_dir.tif", overwrite=T)
-writeRaster(dem_acc_7arc, "./assets/TIF/dem_7arc_acc.tif", overwrite=T)
-writeRaster(dem_acc_5arc, "./assets/TIF/dem_5arc_acc.tif", overwrite=T)
+raster::writeRaster(dem_condt, "./assets/TIF/dem_5arc_condt_chilwa.tif", overwrite=T)
+raster::writeRaster(dem_dir, "./assets/TIF/dem_5arc_dir_chilwa.tif", overwrite=T)
+raster::writeRaster(dem_acc, "./assets/TIF/dem_5arc_acc_chilwa.tif", overwrite=T)
+
+tmap::tmap_mode("plot")
+tmap::tm_shape(dem_condt) + 
+  tmap::tm_raster(
+    col.scale = tm_scale_continuous(values = terrain.colors(7)),
+    col.legend = tm_legend(title = "Elevation (m)", reverse = T)) + 
+  tmap::tm_graticules(lines = T, labels.rot = c(0, 90), lwd = 0.2) +
+  tmap::tm_scalebar(position = c("LEFT", "BOTTOM"), text.size = 0.5) + 
+  tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("top","left"))
 ```
 
 ```{r}
@@ -382,21 +161,20 @@ writeRaster(dem_acc_5arc, "./assets/TIF/dem_5arc_acc.tif", overwrite=T)
 #| message: false
 #| error: false
 #| echo: false
-#| eval: false
+#| eval: true
 
-dem = terra::rast("./assets/TIF/dem_7arc_condt.tif")
+dem = terra::rast("./assets/TIF/dem_5arc_condt_chilwa.tif")
+
 tmap::tmap_mode("plot")
-tmap::tm_shape(dem) + 
+tmap::tm_shape(dem_condt) + 
   tmap::tm_raster(
-    col.scale = tm_scale_continuous(values = "viridis"),
+    col.scale = tm_scale_continuous(values = terrain.colors(7)),
     col.legend = tm_legend(title = "Elevation (m)", reverse = T)) + 
   tmap::tm_graticules(lines = T, labels.rot = c(0, 90), lwd = 0.2) +
   tmap::tm_scalebar(position = c("LEFT", "BOTTOM"), text.size = 0.5) + 
-  tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("top","left"))+
-  tmap::tm_basemap("Esri.WorldImagery")
+  tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("top","left"))
 ```
 
-![](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/MAP/elevation_map_2D.png)
 
 ## 3. Delineate Streams
 
