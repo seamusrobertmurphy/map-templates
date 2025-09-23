@@ -6,7 +6,7 @@ format:
   html:
     toc: true
     toc-location: right
-    toc-depth: 2
+    toc-depth: 3
     highlight-style: pygments
     page-layout: article
 
@@ -105,7 +105,7 @@ rivers    = sf::st_read("./assets/inputs/rivers_site.shp", quiet=T) |>
   sf::st_cast("LINESTRING") |> sf::st_transform(crs_master) 
 lakes     = sf::st_read("./assets/inputs/lakes_site.shp", quiet=T)  |> 
   sf::st_cast("POLYGON") |> sf::st_transform(crs_master)
-watershed = sf::read_sf("./assets/inputs/chilwa_watershed_4326.shp", quiet=T) |> 
+aoi       = sf::read_sf("./assets/inputs/chilwa_watershed_4326.shp", quiet=T) |> 
   sf::st_cast("POLYGON") |> sf::st_transform(crs_master)
 bbox_aoi  = terrainr::add_bbox_buffer(aoi, 20000, "meters")
 vbox_aoi  = terra::vect(bbox_aoi)
@@ -133,335 +133,103 @@ with `RichDEM` library [^1]
 # z = 11: 3-Arc Second 
 # z = 10: 5-Arc Second 
 
+#Download and process DEM 
 dem = elevatr::get_elev_raster(aoi, z=10,clip="locations")|>
-  terra::rast() |> terra::crop(terra::vect(aoi)) 
-
-#Process DEM by breaching & filling depressions & flats
-dem_condt  = dem |> 
+  terra::rast() |> 
+  terra::crop(terra::vect(aoi)) |>
   flowdem::breach() |>
   flowdem::fill(epsilon=T) 
-  #flowdem::fill_basins() # costal drainage basins
 
-# Calculate flow direction & accumulation
-dem_dir = dem_condt |> flowdem::dirs(mode="d8")
-dem_acc = dem_dir   |> flowdem::accum(mode="d8")
+slope_matrix <- matrix(c(
+  0, 5, 1,    # <5%
+  5, 10, 2,   # 5-10%
+  10, 15, 3,  # 10-15%
+  15, 20, 4,  # 15-20%
+  20, 30, 5,  # 20-30%
+  30, 100, 6  # 30-100% (since you clamped at 100)
+), ncol=3, byrow=TRUE)
 
-raster::writeRaster(dem_condt, "./assets/TIF/dem_5arc_condt_chilwa.tif", overwrite=T)
-raster::writeRaster(dem_dir, "./assets/TIF/dem_5arc_dir_chilwa.tif", overwrite=T)
-raster::writeRaster(dem_acc, "./assets/TIF/dem_5arc_acc_chilwa.tif", overwrite=T)
+aspect_matrix <- matrix(c(
+  0, 22.5, 1,      # North
+  22.5, 67.5, 2,   # Northeast  
+  67.5, 112.5, 3,  # East
+  112.5, 157.5, 4, # Southeast
+  157.5, 202.5, 5, # South
+  202.5, 247.5, 6, # Southwest
+  247.5, 292.5, 7, # West
+  292.5, 337.5, 8, # Northwest
+  337.5, 360, 1    # North (wraparound)
+), ncol=3, byrow=TRUE)
+
+slope_deg = terra::terrain(dem, v="slope", unit="degrees", neighbors=8)
+slope_pct = base::tan(slope_deg * pi/180) * 100 
+slope_pct = terra::clamp(slope_pct, lower=0, upper=100)
+aspect_deg = terra::terrain(dem, v="aspect", unit="degrees", neighbors=8)
+
+slope      = terra::classify(slope_pct, slope_matrix, include.lowest=TRUE)
+aspect     = terra::classify(aspect_deg, aspect_matrix, include.lowest=T)
+
+raster::writeRaster(dem, "./assets/TIF/dem_5arc_condt_chilwa.tif", overwrite=T)
+raster::writeRaster(slope, "./assets/TIF/slope_5arc_condt_chilwa.tif", overwrite=T)
+raster::writeRaster(aspect, "./assets/TIF/aspect_5arc_condt_chilwa.tif", overwrite=T)
+```
+
+## 3. Render Maps
+
+```{r}
+#| comment: NA
+#| warning: false
+#| message: false
+#| error: false
+#| echo: true
+#| eval: true
+
+dem   = terra::rast("./assets/TIF/dem_5arc_condt_chilwa.tif")
+slope = terra::rast("./assets/TIF/slope_5arc_condt_chilwa.tif")
+aspect= terra::rast("./assets/TIF/aspect_5arc_condt_chilwa.tif")
+
+levels(slope) <- data.frame(ID = 1:6,
+  slope_class = c("<5%", "5-10%", "10-15%", "15-20%", "20-30%", "30-100%"))
+levels(aspect) <- data.frame(ID = 1:8,
+  direction = c("N", "NE", "E", "SE", "S", "SW", "W", "NW"))
 
 tmap::tmap_mode("plot")
-tmap::tm_shape(dem_condt) + 
+tmap::tm_shape(dem) + 
   tmap::tm_raster(
     col.scale = tm_scale_continuous(values = terrain.colors(7)),
     col.legend = tm_legend(title = "Elevation (m)", reverse = T)) + 
-  tmap::tm_shape(rivers) + tm_lines(col = "steelblue") +
-  tmap::tm_shape(lakes) + tm_fill("steelblue") +
+  tmap::tm_shape(rivers) + tm_lines(col = "turquoise") +
+  tmap::tm_shape(lakes) + tm_fill("turquoise") +
   tmap::tm_graticules(lines = T, labels.rot = c(0, 90), lwd = 0.2) +
   tmap::tm_scalebar(position = c("LEFT", "BOTTOM"), text.size = 0.5) + 
-  tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("top","left"))
-```
+  tmap::tm_compass(color.dark="gray60",position=c("top","left")) -> tm1_static
 
-```{r}
-#| comment: NA
-#| warning: false
-#| message: false
-#| error: false
-#| echo: false
-#| eval: true
-
-dem = terra::rast("./assets/TIF/dem_5arc_condt_chilwa.tif")
-
-tmap::tmap_mode("plot")
-tmap::tm_shape(dem_condt) + 
+tmap::tm_shape(slope) + 
   tmap::tm_raster(
-    col.scale = tm_scale_continuous(values = terrain.colors(7)),
-    col.legend = tm_legend(title = "Elevation (m)", reverse = T)) + 
+    col.scale = tm_scale(values = "viridis"), 
+    col.legend=tm_legend(title="Slope (%)",reverse = T)) + 
+  tmap::tm_shape(rivers) + tm_lines(col = "turquoise") +
+  tmap::tm_shape(lakes) + tm_fill("turquoise") +
   tmap::tm_graticules(lines = T, labels.rot = c(0, 90), lwd = 0.2) +
   tmap::tm_scalebar(position = c("LEFT", "BOTTOM"), text.size = 0.5) + 
-  tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("top","left"))
+  tmap::tm_compass(color.dark="gray60",position=c("top","left")) -> tm2_static
+
+tmap::tm_shape(aspect) + 
+  tmap::tm_raster(
+    col.scale = tm_scale(values = "PiYG"), 
+    col.legend=tm_legend(title="Aspect",reverse = F)) + 
+  tmap::tm_shape(rivers) + tm_lines(col = "turquoise") +
+  tmap::tm_shape(lakes) + tm_fill("turquoise") +
+  tmap::tm_graticules(lines = T, labels.rot = c(0, 90), lwd = 0.2) +
+  tmap::tm_scalebar(position = c("LEFT", "BOTTOM"), text.size = 0.5) + 
+  tmap::tm_compass(color.dark="gray60",position=c("top","left")) -> tm3_static
+
+tmap::tmap_arrange(tm1_static, tm2_static, tm3_static, nrow=1)
 ```
 
+![](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/MAP/elevation_chilwa_2D.png)
 
-## 3. Delineate Streams
-
-```{r}
-#| comment: NA
-#| warning: false
-#| message: false
-#| eval: false
-#| echo: true
-# Calculate Flow Accumulation Distribution
-par(mfrow = c(2, 2))
-thresholds <- c(1, 2, 10, 20, 50, 100)
-
-for(thresholds in c(1, 2, 10, 20, 50, 100)) {
-  count <- sum(acc_values >= thresholds, na.rm = TRUE)
-   percent <- (count / length(acc_values)) * 100
-   cat("Threshold", thresholds, ":", count, "cells (", round(percent, 2), "%)\n")
-}
-
-acc_values <- values(dem_acc, na.rm = TRUE)
-quantile(acc_values, probs = c(0.5, 0.9, 0.95, 0.99, 0.995, 0.999), na.rm = TRUE)
-upper_limit <- quantile(acc_values, 0.99, na.rm = TRUE)
-acc_subset <- acc_values[acc_values <= upper_limit]
-low_vals <- acc_values[acc_values <= 10 & acc_values >= 2]
-med_vals <- acc_values[acc_values <= 50 & acc_values >= 2]
-high_vals <- acc_values[acc_values <= 100 & acc_values >= 2]
-hist(low_vals, breaks = 10, main = "Flow Accumulation: 1-10", xlab = "Accumulation")
-hist(med_vals, breaks = 25, main = "Flow Accumulation: 1-50", xlab = "Accumulation")
-hist(high_vals, breaks = 50, main = "Flow Accumulation: 1-100", xlab = "Accumulation")
-#hist(acc_subset, breaks = 500, main="Flow Accumulation (<99%)", xlab="Flow Accumulation")
-hist(log10(acc_values+1),breaks=50,main="Log10 Accumulation)", xlab="Log10 Accumulation")
-
-# Delineate streams using flow accumulation
-streams_binary = dem_acc > 100
-streams = sf::st_as_sf(as.polygons(streams_binary == 1))
-st_write(streams, "./assets/SHP/streams_100.shp", delete_dsn=T)
-```
-
-```{r}
-#| comment: NA
-#| warning: false
-#| message: false
-#| error: false
-#| echo: false
-#| eval: true
-
-par(mfrow = c(2, 2))
-dem_acc   = terra::rast("./assets/TIF/dem_7arc_acc.tif")
-dem_condt = terra::rast("./assets/TIF/dem_7arc_condt.tif")
-
-acc_values <- values(dem_acc, na.rm = TRUE)
-thresholds <- c(1, 2, 10, 20, 50, 100)
-for(thresholds in c(1, 2, 10, 20, 50, 100)) {
-  count <- sum(acc_values >= thresholds, na.rm = TRUE)
-   percent <- (count / length(acc_values)) * 100
-   cat("Threshold", thresholds, ":", count, "cells (", round(percent, 2), "%)\n")
-   }
-
-quantile(acc_values, probs = c(0.5, 0.9, 0.95, 0.99, 0.995, 0.999), na.rm = TRUE)
-upper_limit <- quantile(acc_values, 0.99, na.rm = TRUE)
-acc_subset <- acc_values[acc_values <= upper_limit]
-low_vals <- acc_values[acc_values <= 10 & acc_values >= 2]
-med_vals <- acc_values[acc_values <= 50 & acc_values >= 2]
-high_vals <- acc_values[acc_values <= 100 & acc_values >= 2]
-hist(low_vals, breaks = 10, main = "Flow Accumulation: 1-10", xlab = "Accumulation")
-hist(med_vals, breaks = 25, main = "Flow Accumulation: 1-50", xlab = "Accumulation")
-hist(high_vals, breaks = 50, main = "Flow Accumulation: 1-100", xlab = "Accumulation")
-#hist(acc_subset, breaks = 500, main="Flow Accumulation (<99%)", xlab="Flow Accumulation")
-hist(log10(acc_values+1),breaks=50,main="Log10 Accumulation)", xlab="Log10 Accumulation")
-```
-
-```{r}
-#| comment: NA
-#| warning: false
-#| message: false
-#| eval: false
-#| echo: false
-
-#url_rivers <- "https://data.hydrosheds.org/file/HydroRIVERS/HydroRIVERS_v10_shp.zip"
-#url_lakes <- "https://data.hydrosheds.org/file/hydrolakes/HydroLAKES_polys_v10_shp.zip"
-#url_watersheds <- "https://data.hydrosheds.org/file/hydrobasins/customized_with_lakes/hybas_lake_af_lev01-12_v1c.zip"
-#download.file(url = url, path = getwd(), destfile = file_name)
-
-crs_master = "EPSG:3005"
-island_shoreline = sf::st_read("./assets/SHP/island_shoreline.shp", quiet=T)
-rivers = sf::st_read("../datasets/HYDRO/Rivers/NAm/HydroRIVERS_v10_na.shp") |>
-  dplyr::select(ORD_FLOW) |>   
-  sf::st_intersection(island_shoreline) |>  
-  sf::st_cast() |> 
-  sf::st_transform(crs_master)
-
-basins = sf::st_read("../datasets/HYDRO/Basins/hybas_lake_na_lev06_v1c.shp") |>
-  dplyr::select(HYBAS_ID) |>   
-  sf::st_intersection(island_shoreline) |>  
-  sf::st_cast() |> 
-  sf::st_transform(crs_master)
-
-lakes = sf::st_read("../datasets/HYDRO/Lakes/HydroLAKES_polys_v10.shp") |>
-  dplyr::select(Lake_name) |>   
-  sf::st_intersection(island_shoreline) |>  
-  sf::st_cast() |> 
-  sf::st_transform(crs_master)
-
-island_shoreline = sf::st_read("./assets/SHP/island_shoreline.shp", quiet=T)|> 
-  sf::st_transform(crs_master)
-
-sf::st_write(lakes, "./assets/SHP/lakes.shp", delete_dsn=T)
-sf::st_write(basins, "./assets/SHP/basins.shp", delete_dsn=T)
-sf::st_write(rivers, "./assets/SHP/streams.shp", delete_dsn=T)
-```
-
-## 4. Build Map
-
-```{r}
-#| comment: NA
-#| message: false
-#| warning: false
-#| error: false
-#| eval: false
-#| echo: true
-
-lakes = sf::st_read("./assets/SHP/lakes.shp") |> sf::st_cast("POLYGON")
-basins= sf::st_read("./assets/SHP/basins.shp") |> sf::st_cast("MULTIPOLYGON")
-rivers= sf::st_read("./assets/SHP/streams.shp")|> sf::st_cast("MULTILINESTRING")
-dem   = terra::rast("./assets/TIF/dem_7arc_condt.tif") 
-h <- nrow(dem)
-w <- ncol(dem)
-
-matrix = rayshader::raster_to_matrix(dem) 
-
-matrix |>
-  rayshader::height_shade() |>
-  rayshader::add_overlay(
-    rayshader::generate_line_overlay(
-      geometry   = rivers,
-      extent     = dem,
-      heightmap  = matrix,
-      color      = "turquoise",
-      linewidth  = 3,
-      ), alphalayer = 1
-    ) |>
-  rayshader::plot_3d(
-    matrix,
-    zscale       = 69,
-    solid        = T,
-    shadow       = T,
-    shadow_darkness = 2,
-    background   = "white",
-    windowsize   = 800,
-    zoom         = 0.6,
-    phi          = 89.9,
-    theta        = 0 
-  )
-
-#rayshader::render_snapshot(
-#  rayvertex_lighting  = T,
-#  rayvertex_lights    = 
-#    rayvertex::directional_light(
-#      intensity       = 1.5, 
-#      color           = "#F3EEE1", 
-#      direction       = c(-1.5,1,-1.5)
-#      ),
-#  rayvertex_shadow_map= T, 
-#  software_render     = T
-#  )
-```
-
-## 5. Render Map
-
-```{r map-render}
-#| comment: NA
-#| warning: false
-#| message: false
-#| error: false
-#| eval: false
-#| echo: true
-
-rayshader::render_highquality(
-  samples           = 400, 
-  sample_method     = "sobol", 
-  parallel          = T, 
-  environment_light = "kiara_1_dawn_2k.hdr", 
-  light             = T, 
-  width             = w, 
-  height            = h,
-  preview           = T, 
-  interactive       = F,
-  backgroundhigh="#FFFFFF",
-  backgroundlow="#FFFFFF"
-  )
-```
-
-![](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/MAP/stream_map_high_b.png)
-
-```{r notes-render}
-#| comment: NA
-#| warning: false
-#| message: false
-#| eval: false
-#| echo: false
-
-
-# ------------------------------------------------- #
-
-basins_line = rayshader::generate_polygon_overlay(
-  geometry  = rivers, 
-  heightmap = mat, 
-  extent = terra::ext(dem_condt), 
-  linewidth = 1
-  )  
-  
-rivers_line = rayshader::generate_line_overlay(
-  geometry  = rivers, 
-  heightmap = mat, 
-  extent = terra::ext(dem), 
-  linewidth = 1, 
-  color = "white"
-  )  
-
-mat |> rayshader::constant_shade(color = "lightgoldenrod") |> 
-  rayshader::add_overlay(basins_line, alphalayer = 0.9) |>
-  rayshader::add_overlay(rivers_line, alphalayer = 0.9)
-
-rayshader::plot_3d(mat, 
-  zscale    = 69, 
-  windowsize= 800,
-  theta     = 0,
-  phi       = 89.9,
-  zoom      = 0.9, 
-  solid     = F, 
-  lineantialias=F
-  )
-  
-rayshader::render_highquality(
-  samples       = 400, 
-  sample_method = "sobol", 
-  parallel      =T, 
-  environment_light = "kiara_1_dawn_2k.hdr", 
-  rotat_env = 135, 
-  light = T, 
-  width = 2000, 
-  height = 2000, 
-  preview = T, 
-  interactive = F
-  )
-
-
-rayshader::render_snapshot(
-  rayvertex_lighting = T,
-  rayvertex_lights   = 
-    rayvertex::directional_light(
-      intensity = 1.5, 
-      color = "#F3EEE1", 
-      direction=c(-1.5,1,-1.5)
-      ),
-  rayvertex_shadow_map = T, software_render =T
-  )
-
-rayshader::render_highquality(
-  samples       = 400, 
-  sample_method = "sobol", 
-  parallel      = T, 
-  preview       = T,
-  light         = F,
-  lightdirection= c(135, 45),
-  lightcolor = c("lightgoldenrod"),
-  lightaltitude = 25,
-  ambient_light = 0.1,
-  rotate_env    = 135,
-  intensity_env = 0.85,
-  interactive   = F,
-  parallel      = T,
-  width         = w,
-  height        = h,
-  backgroundhigh= "#FFFFFF",
-  backgroundlow = "#FFFFFF"
-  )
-
-
-```
+### Runtime Log
 
 ```{r session-info}
 #| eval: true
