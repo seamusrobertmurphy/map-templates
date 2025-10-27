@@ -83,7 +83,7 @@ div.column {
   display: block;
   height:200px;
   width: 200px;
-  background-image: url('https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/MAP/stream_map_high_b.png');
+  background-image: url('https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/MAP/aspect_chilwa_2d.png');
   background-size: contain;
   background-position: 50% 50%;
   padding-top: 80px !important;
@@ -91,7 +91,7 @@ div.column {
 }
 ```
 
-## 1. Import AOI & Hydrography
+## 1. Import AOI
 
 ```{r aoi-import}
 #| warning: false
@@ -226,8 +226,6 @@ tmap::tm_shape(aspect) +
 
 tmap::tmap_arrange(tm1_static, tm2_static, tm3_static, nrow=1)
 ```
-
-![](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/MAP/elevation_chilwa_2D.png)
 
 ### Runtime Log
 

@@ -1,20 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://seamusrobertmurphy.quarto.pub/map-templates/locator-map.html</loc>
-    <lastmod>2025-09-22T03:15:10.559Z</lastmod>
+    <loc>https://seamusrobertmurphy.quarto.pub/map-templates/climate-map.html</loc>
+    <lastmod>2025-10-05T22:46:54.661Z</lastmod>
   </url>
   <url>
-    <loc>https://seamusrobertmurphy.quarto.pub/map-templates/assets/inputs/rivers_country.html</loc>
-    <lastmod>2025-09-14T05:18:22.662Z</lastmod>
+    <loc>https://seamusrobertmurphy.quarto.pub/map-templates/assets/inputs/watershed_site.html</loc>
+    <lastmod>2025-09-14T05:18:22.665Z</lastmod>
   </url>
   <url>
-    <loc>https://seamusrobertmurphy.quarto.pub/map-templates/assets/inputs/chilwa_watershed_extent.html</loc>
-    <lastmod>2025-09-14T05:18:22.655Z</lastmod>
+    <loc>https://seamusrobertmurphy.quarto.pub/map-templates/assets/inputs/lakes_site.html</loc>
+    <lastmod>2025-09-14T05:18:22.661Z</lastmod>
   </url>
   <url>
-    <loc>https://seamusrobertmurphy.quarto.pub/map-templates/assets/inputs/lakes_country.html</loc>
-    <lastmod>2025-09-14T05:18:22.652Z</lastmod>
+    <loc>https://seamusrobertmurphy.quarto.pub/map-templates/assets/inputs/chilwa_watershed_4326.html</loc>
+    <lastmod>2025-09-14T05:18:22.653Z</lastmod>
+  </url>
+  <url>
+    <loc>https://seamusrobertmurphy.quarto.pub/map-templates/assets/inputs/rivers_site.html</loc>
+    <lastmod>2025-09-14T05:18:22.635Z</lastmod>
   </url>
   <url>
     <loc>https://seamusrobertmurphy.quarto.pub/map-templates/assets/SHP/lake_comox.html</loc>
@@ -26,11 +30,15 @@
   </url>
   <url>
     <loc>https://seamusrobertmurphy.quarto.pub/map-templates/about.html</loc>
-    <lastmod>2025-09-22T03:53:40.927Z</lastmod>
+    <lastmod>2025-10-10T06:10:20.153Z</lastmod>
   </url>
   <url>
     <loc>https://seamusrobertmurphy.quarto.pub/map-templates/projects/index.html</loc>
     <lastmod>2025-09-22T03:36:13.252Z</lastmod>
+  </url>
+  <url>
+    <loc>https://seamusrobertmurphy.quarto.pub/map-templates/topo-map.html</loc>
+    <lastmod>2025-09-23T21:37:59.553Z</lastmod>
   </url>
   <url>
     <loc>https://seamusrobertmurphy.quarto.pub/map-templates/population-map.html</loc>
@@ -42,26 +50,30 @@
   </url>
   <url>
     <loc>https://seamusrobertmurphy.quarto.pub/map-templates/stream-map.html</loc>
-    <lastmod>2025-09-22T02:58:13.775Z</lastmod>
+    <lastmod>2025-09-24T16:28:39.646Z</lastmod>
   </url>
   <url>
     <loc>https://seamusrobertmurphy.quarto.pub/map-templates/site-map.html</loc>
-    <lastmod>2025-09-22T03:08:11.656Z</lastmod>
+    <lastmod>2025-09-24T04:19:33.589Z</lastmod>
   </url>
   <url>
-    <loc>https://seamusrobertmurphy.quarto.pub/map-templates/assets/inputs/rivers_site.html</loc>
-    <lastmod>2025-09-14T05:18:22.635Z</lastmod>
+    <loc>https://seamusrobertmurphy.quarto.pub/map-templates/assets/SHP/aoi_watershed.html</loc>
+    <lastmod>2025-09-23T22:33:38.077Z</lastmod>
   </url>
   <url>
-    <loc>https://seamusrobertmurphy.quarto.pub/map-templates/assets/inputs/chilwa_watershed_4326.html</loc>
-    <lastmod>2025-09-14T05:18:22.653Z</lastmod>
+    <loc>https://seamusrobertmurphy.quarto.pub/map-templates/assets/inputs/lakes_country.html</loc>
+    <lastmod>2025-09-14T05:18:22.652Z</lastmod>
   </url>
   <url>
-    <loc>https://seamusrobertmurphy.quarto.pub/map-templates/assets/inputs/lakes_site.html</loc>
-    <lastmod>2025-09-14T05:18:22.661Z</lastmod>
+    <loc>https://seamusrobertmurphy.quarto.pub/map-templates/assets/inputs/chilwa_watershed_extent.html</loc>
+    <lastmod>2025-09-14T05:18:22.655Z</lastmod>
   </url>
   <url>
-    <loc>https://seamusrobertmurphy.quarto.pub/map-templates/assets/inputs/watershed_site.html</loc>
-    <lastmod>2025-09-14T05:18:22.665Z</lastmod>
+    <loc>https://seamusrobertmurphy.quarto.pub/map-templates/assets/inputs/rivers_country.html</loc>
+    <lastmod>2025-09-14T05:18:22.662Z</lastmod>
+  </url>
+  <url>
+    <loc>https://seamusrobertmurphy.quarto.pub/map-templates/locator-map.html</loc>
+    <lastmod>2025-09-22T03:15:10.559Z</lastmod>
   </url>
 </urlset>

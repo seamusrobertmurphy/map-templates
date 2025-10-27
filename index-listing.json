@@ -1,0 +1,11 @@
+{
+  "listing": "/index.html",
+  "items": [
+    "/site-map.html",
+    "/watershed-map.html",
+    "/stream-map.html",
+    "/topo-map.html",
+    "/climate-map.html",
+    "/population-map.html"
+  ]
+}

@@ -24,7 +24,6 @@ editor_options:
 
 #install.packages("easypackages")
 pacman::p_load(
-  "bcdata", "bslib",
   "cli", "cols4all", "covr", "cowplot",
   "dendextend", "digest", "DiagrammeR", "dtwclust", "downlit",
   "exactextractr", "elevatr",
@@ -64,7 +63,7 @@ options(
 
 tmap::tmap_options(
   component.autoscale=F,
-  max.raster = c(plot=8000000, view=10000000)
+  max.raster = c(plot=9500000, view=10000000)
   )
 
 mapviewOptions(fgb = FALSE)
@@ -322,7 +321,6 @@ tmap::tm_shape(island_counties) + tmap::tm_borders(lwd=0) +  # framing placehold
     legend.text.size  = 0.9,
     legend.title.size = 0.9
     ) -> tm03_live
-
 tm03_live
 ```
 
@@ -534,7 +532,7 @@ matrix |>
       geometry   = rivers,
       extent     = dem,
       heightmap  = matrix,
-      color      = "turquoise",
+      color      = "royalblue",
       linewidth  = 3,
       ), alphalayer = 1
     ) |>
@@ -546,7 +544,7 @@ matrix |>
     shadow_darkness = 2,
     background   = "white",
     windowsize   = 800,
-    zoom         = 0.6,
+    zoom         = 0.8,
     phi          = 89.9,
     theta        = 0 
   )
@@ -567,12 +565,12 @@ matrix |>
 ## 5. Render Map
 
 ```{r map-render}
-#| comment: NA
-#| warning: false
-#| message: false
-#| error: false
 #| eval: false
 #| echo: true
+#| error: false
+#| message: false
+#| warning: false
+#| comment: NA
 
 rayshader::render_highquality(
   samples           = 400, 

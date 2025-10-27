@@ -1,11 +1,12 @@
 ---
-title: "Site Maps"
+title: ""
 execute:
   echo: true
 format:
   html:
     toc: true
     toc-location: right
+    toc-depth: 3
     highlight-style: pygments
     page-layout: article
 engine: knitr
@@ -92,13 +93,9 @@ div.column {
 }
 ```
 
--   Declare aoi, extent & projection
--   Download high-resolution basemap
--   Customize layers & attributes
--   Choose output format & resolution
--   Display output map
+# Field Maps
 
-## 1. AOI's & projection
+## 1. Import AOI
 
 ```{r site-aoi}
 #| warning: false
@@ -122,7 +119,7 @@ tmap::tm_shape(aoi_site) +
 Figure 2: Interactive map showing project boundary and
 ESRI's basemap
 
-## 2. Download basemap
+## 2. Import Basemap
 
 ```{r site-basemap, cache=T}
 #| warning: false
@@ -148,7 +145,7 @@ tmap::tm_shape(basemap_150k) + tmap::tm_rgb() +
 Figure 3: Site map showing project boundary and downloaded
 basemap `OpenTopoMap`
 
-## 3. Customize layout
+## 3. Build Map
 
 ```{r customize-site-map}
 #| warning: false
@@ -162,12 +159,16 @@ site_map = tmap::tm_shape(basemap_150k) + tmap::tm_rgb() +
   tmap::tm_borders(lwd = 1, col = "red") +
   tmap::tm_graticules(lines=T,labels.rot=c(0,90),lwd=0.2) +
   tmap::tm_credits("EPSG:4326", position = c("left", "bottom")) +
-  tmap::tm_scale_bar(c(0, 10, 20, 40), position = c("RIGHT", "BOTTOM"), text.size = .5) +
+  tmap::tm_scale_bar(
+    c(0, 10, 20, 40), 
+    position = c("RIGHT", "BOTTOM"), 
+    text.size = .5
+    ) +
   tmap::tm_compass(
     type = "4star", size = 1.5,
     color.dark = "gray60", text.color = "gray60",
     position = c("left", "top")
-    ) # some functions deprecated & may need updating (tm_scale_bar() | tm_scalebar())
+    ) 
 ```
 
 ## 4. Save output
@@ -190,6 +191,117 @@ tmap::tmap_save(
 ![Figure 4: Site Map rendered with customized attributes and
 resolution
 (15120x15120pixels)](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/01-site-map.png)
+
+# Locator Maps
+
+## 1. Import AOI
+
+```{r locator-map}
+#| warning: false
+#| message: false
+#| echo: true
+#| eval: true
+#| comment: NA
+
+aoi_country = giscoR::gisco_get_countries(country = "Malawi", resolution = "3") |>
+  st_cast() |> st_transform(crs_master)
+aoi_region = giscoR::gisco_get_countries(
+  country = c("Malawi", "Zambia", "Tanzania", "Mozambique"), resolution = "3") |>
+  st_cast() |> st_transform(crs_master)
+
+bbox_site  = terrainr::add_bbox_buffer(aoi_site, 20000, "meters")
+bbox_country = terrainr::add_bbox_buffer(aoi_country, 40000, "meters")
+bbox_region = terrainr::add_bbox_buffer(aoi_region, 80000, "meters")
+
+vbox_site = vect(bbox_site)
+vbox_region = vect(bbox_region)
+vbox_country = terra::vect(terra::ext(vect(aoi_country)) * 1.3) |> sf::st_as_sf()
+sf::st_crs(vbox_country) <- "epsg:4326" 
+
+# Interactive map mode: "view" 
+tmap::tmap_mode("view")
+tmap::tm_shape(vbox_country) +
+  tmap::tm_borders(lwd = 2, col = "green") +
+  tmap::tm_shape(aoi_region) +
+  tmap::tm_borders(lwd = 1, col = "blue") +
+  tmap::tm_shape(aoi_site) +
+  tmap::tm_borders(lwd = 2, col = "red")
+```
+
+Figure 2: Interactive map showing site boundary, national
+borders, and national bounding box
+
+## 2. Import Basemap
+
+```{r locator-basemap}
+#| warning: false
+#| message: false
+#| echo: true
+#| eval: false
+#| comment: NA
+
+# zoom = 8 returns scale of 1:2,000,000
+basemap_4m = maptiles::get_tiles(
+  bbox_region, 
+  zoom      = 8, 
+  crop      = T,
+  provider  = "CartoDB.Positron"
+)
+
+tmap::tmap_mode("plot")
+country_map = tmap::tm_shape(vbox_country) + tm_borders(lwd = 0.0, col = "black") +
+  tmap::tm_shape(basemap_4m) + tm_rgb(alpha=0.2) + 
+  tmap::tm_shape(aoi_site) + tm_borders(lwd=2, col = "red", fill="#e28672", fill_alpha=0.5) +
+  tmap::tm_shape(aoi_region) + tm_borders(lwd = 0.5, col = "black") +
+  tmap::tm_compass(type="4star", size=1.1, color.dark = "gray60", text.color="gray60",position=c("LEFT", "TOP")
+    ) 
+
+tmap::tmap_save(country_map, 
+                "/Users/seamus/Repos/map-templates/assets/outputs/02-country-map.png"
+                )
+country_map
+```
+
+![Figure 3: Interactive map showing site boundary, national
+borders, and downloaded
+basemap.](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/02-country-map.png)
+
+## 3. Build Map
+
+```{r customize-locator-map}
+#| warning: false
+#| message: false
+#| echo: true
+#| eval: false
+#| comment: NA
+
+main_map = tmap::tmap_grob(site_map)
+inset_map = tmap::tmap_grob(country_map)
+
+locator_map = ggdraw() +
+  draw_plot(main_map) +
+  draw_plot(inset_map, x = -0.39, y=0.4, height = 0.45)
+```
+
+## 4. Save output
+
+```{r output-map}
+#| warning: false
+#| message: false
+#| echo: true
+#| eval: false
+#| comment: NA
+
+ggsave(locator_map, 
+       "/Users/seamus/Repos/map-templates/assets/outputs/03-locator-map.png"
+       )
+```
+
+![Figure 4: Locator map showing site area and location at
+1:4,000,000 & 1:150,000
+scales](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/03-locator-map.png)
+
+### Runtime Log
 
 ```{r seesion-info}
 devtools::session_info()

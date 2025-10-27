@@ -2,20 +2,12 @@
   path: ./site-map.qmd
   image: https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/01-site-map.png
   description: >
-    A fieldwork sitemap to help users navigate a site, marking key locations, 
-    boundaries, and features, during research or exploration activities.
+    Site maps to help navigate a field site, illustrating settlements, 
+    boundaries, and access routs, and locator maps showing geographic locations within  
+    local and national contexts.
   categories: [Mapping, Fieldwork, Operations]
   date: 2024-11-10
   
-- title: Locator Maps
-  path: ./locator-map.qmd
-  image: https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/03-locator-map.png
-  description: >
-    A locator map showing the geographic position of a field site within its 
-    local and national context, helping users quickly identify its broader location.
-  categories: [Mapping, Fieldwork, Operations]
-  date: 2024-11-15
-
 - title: Watershed Maps
   path: ./watershed-map.qmd
   image: https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/06-watershed-3D.png
@@ -36,6 +28,29 @@
   categories: [Mapping, Fieldwork, Operations]
   date: 2025-09-20
   
+- title: Topography Maps
+  path: ./topo-map.qmd
+  image: https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/MAP/aspect_chilwa_2d.png
+  description: >
+    Topographic maps featuring classified slope percentages and cardinal aspects derived from conditioned DEM data. 
+    These maps support terrain assessment, erosion risk evaluation, slope stability analysis, and 
+    site suitability planning for infrastructure development, agricultural practices, and environmental 
+    management operations.
+  categories: [Mapping, Fieldwork, Operations]
+  date: 2025-08-01
+
+- title: Climate Maps
+  path: ./climate-map.qmd
+  image: https://raw.githubusercontent.com/seamusrobertmurphy/forest-fire-risk-cffdrs/main/assets/PNG/temp.png
+  description: >
+    Climate maps featuring mean daily temperature (°C), precipitation (mm³/day), relative humidity (%), 
+    and wind speed (m/s) derived from Environment and Climate Change Canada weather station data using Inverse 
+    Distance Weighting interpolation. Station data aggregated over specified periods and spatially interpolated 
+    to continuous raster surfaces, supporting wildfire risk assessment, agricultural planning, environmental 
+    monitoring, and climate impact studies for operational decision-making.
+  categories: [Mapping, Fieldwork, Operations]
+  date: 2025-08-01
+
 - title: Population Maps
   path: ./population-map.qmd
   image: https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/04-population-map.png
@@ -44,4 +59,3 @@
     highlighting densely and sparsely populated regions surrounding a field site.
   categories: [Mapping, Fieldwork, Operations]
   date: 2024-11-25
-

@@ -96,23 +96,27 @@ ul.task-list li input[type="checkbox"] {
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="./site-map.html"> 
-<span class="menu-text">Site Maps</span></a>
-  </li>  
-  <li class="nav-item">
-    <a class="nav-link" href="./locator-map.html"> 
-<span class="menu-text">Locator Maps</span></a>
+<span class="menu-text">Sites</span></a>
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="./watershed-map.html"> 
-<span class="menu-text">Watershed Maps</span></a>
+<span class="menu-text">Watershed</span></a>
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="./stream-map.html"> 
-<span class="menu-text">Riparian Maps</span></a>
+<span class="menu-text">Riparian</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./topo-map.html"> 
+<span class="menu-text">Topography</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./climate-map.html"> 
+<span class="menu-text">Climate</span></a>
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="./population-map.html"> 
-<span class="menu-text">Population Maps</span></a>
+<span class="menu-text">Demography</span></a>
   </li>  
 </ul>
           </div> <!-- /navcollapse -->
@@ -167,12 +171,6 @@ ul.task-list li input[type="checkbox"] {
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./locator-map.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Locator Maps</span></a>
-  </div>
-</li>
-        <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
   <a href="./watershed-map.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Watershed Maps</span></a>
   </div>
@@ -185,8 +183,20 @@ ul.task-list li input[type="checkbox"] {
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./topo-map.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Topography Maps</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./climate-map.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Climate Maps</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./population-map.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Population Maps</span></a>
+ <span class="menu-text">Demography Maps</span></a>
   </div>
 </li>
         <li class="sidebar-item sidebar-item-section">
@@ -238,9 +248,6 @@ ul.task-list li input[type="checkbox"] {
   </div>
   <div class="about-contents"><main class="content" id="quarto-document-content">
 <div id="about">
-<p>My name is Seamus Murphy and I’m a registered forester specializing in forest mensuration and carbon verification. I completed my PhD at SOAS, University of London in 2015 and an MSc in Environmental Forestry at Bangor University in 2019.</p>
-<p>Currently, I work as a REDD+ Consultant at <a href="https://winrock.org/">Winrock International</a>, leading technical support for project-level and jurisdictional carbon programs. Previously, I worked as carbon offset auditor with SCS Global Services and conducted postdoctoral research on aquaculture markets across Egypt and Zambia.</p>
-<p>Over the years, I’ve observed brilliant methodologies fail because they were too complex or poorly documented. This sparked my commitment to open source tools and reproducible research. I develop workflows in <a href="https://rpubs.com/seamusmurphy/gov_sk_tree_height_variability">LiDAR processing</a>, <a href="https://rpubs.com/seamusmurphy/mapping-endorheic-wetland-dynamics">multispectral time series analysis</a>, and <a href="https://seamusrobertmurphy.quarto.pub/art-trees-submission/">carbon accounting systems</a> using R and Python platforms, and test them with real users. This also includes reproducible field tools and workflows, such as <a href="https://seamusmurphy.shinyapps.io/shiny-project-V8/">in-situ data scaling</a>, GPS accuracy assessments (<a href="https://drive.google.com/file/d/126oyAzNCa386aIZLus7oO3_kk9PRmnAd/view?usp=sharing">2020</a> &amp; <a href="https://viewscreen.githubusercontent.com/view/pdf?browser=safari&amp;bypass_fastly=true&amp;color_mode=dark&amp;commit=9a09556452d67378b9d3657d4ba537993426889a&amp;device=unknown_device&amp;docs_host=https%3A%2F%2Fdocs.github.com&amp;enc_url=68747470733a2f2f7261772e67697468756275736572636f6e74656e742e636f6d2f7365616d7573726f626572746d75727068792f4750532d747261696e696e672d6d6174657269616c2f396130393535363435326436373337386239643336353764346261353337393933343236383839612f475053253230534f502532302d253230526f6164253230537572766579253230696e253230455352492532304669656c644d6170732e706466&amp;link_underline_enabled=true&amp;logged_in=true&amp;nwo=seamusrobertmurphy%2FGPS-training-material&amp;path=GPS+SOP+-+Road+Survey+in+ESRI+FieldMaps.pdf&amp;platform=mac&amp;repository_id=691993657&amp;repository_type=Repository&amp;version=18#56d1471b-3313-4786-9de3-4b7cd916e501">2022</a>), <a href="https://drive.google.com/file/d/1JKMX_JB21j3FkHIiZ1dzqFHFGgdaIdgb/view?usp=sharing">equipment calibration</a> and <a href="https://eu.kobotoolbox.org/#/forms/ajw7YvwXFgCgVaaAiz9Xrm/data/map">open-source survey deployment</a>. You can explore my resources on <a href="https://github.com/seamusrobertmurphy/">GitHub</a>, covering everything from carbon methodologies (<a href="https://seamusrobertmurphy.quarto.pub/vm0048/">VM0048</a>) to wildfire fuel typing (<a href="https://seamusrobertmurphy.quarto.pub/cffdrs/">CFFDRS</a>), to validating allometry (<a href="https://rpubs.com/seamusmurphy/art-trees-monte-carlo-uncertainty">ART-TREES</a>).</p>
 </div>
 
 

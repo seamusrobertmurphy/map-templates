@@ -24,29 +24,37 @@ editor_options:
 #install.packages("easypackages")
 easypackages::packages(
   "bslib",
-  "caret", "cli", "cols4all", "covr", "cowplot",
-  "dendextend", "digest", "DiagrammeR", "dtwclust", "downlit",
-  "e1071", "exactextractr", "elevatr",
-  "FNN", "future",
-  "gdalcubes", "gdalUtilities", "geojsonsf", "geos", "ggplot2", "ggstats",
-  "ggspatial", "ggmap", "ggplotify", "ggpubr", "ggrepel", "giscoR",
+  "cli", "cols4all", "covr", "cowplot",
+  "dendextend", "digest", "DiagrammeR", 
+  "dtwclust", "downlit",
+  "exactextractr", "elevatr",
+  "FNN", "future", "flowdem",
+  "gdalUtilities", "geojsonsf", "geos", "geodata", 
+  "ggplot2", "ggstats","ggspatial", "ggmap", 
+  "ggplotify", "ggpubr", "ggrepel", "giscoR",
   "hdf5r", "httr", "httr2", "htmltools",
   "jsonlite",
-  "kohonen",
-  "leafem", "libgeos", "luz", "lwgeom", "leaflet", "leafgl",
+  "leafem", "leaflet.providers", "libgeos", 
+  "luz", "lwgeom", "leaflet", "leafgl",
   "mapedit", "mapview", "maptiles", "methods", "mgcv",
   "ncdf4", "nnet",
   "openxlsx",
-  "parallel", "plotly",
-  "randomForest", "rasterVis", "raster", "Rcpp", "RcppArmadillo",
-  "RcppCensSpatial", "rayshader", "RcppEigen", "RcppParallel",
-  "RColorBrewer", "reactable", "rgl", "rsconnect", "RStoolbox", "rts",
-  "s2", "sf", "scales", "sits", "spdep", "stars", "stringr", "supercells",
-  "terra", "testthat", "tidyverse", "tidyterra", "tools",
+  "parallel", "plotly", "proj4", "PROJ", "progress",
+  "randomForest", "rasterVis", "raster",
+  "rayshader", "rayvertex", 
+  "RColorBrewer", "rgl", "rsconnect", 
+  "RStoolbox", "rts", "rgrass",
+  "s2", "sf", "scales", "spdep", "stars", 
+  "stringr", "supercells",
+  "terra", "terrainr", "testthat", "
+  tidyverse", "tidyterra", "tools",
   "tmap", "tmaptools", "terrainr",
-  "xgboost"
-)
+  "whitebox", "xgboost", 
+  prompt = F
+  )
 
+whitebox::install_whitebox()
+whitebox::wbt_init()
 knitr::opts_chunk$set(
   echo = TRUE, message = FALSE, warning = FALSE,
   error = FALSE, comment = NA, tidy.opts = list(width.cutoff = 6)
@@ -76,22 +84,192 @@ div.column {
 }
 ```
 
--   Declare aoi, extent & projection
--   Download hydro data
--   Download DEM
--   Render 3D map
+-   Declare AOI & Projection
+-   Process DEM Flow
+-   Identify Pour Point
+-   Delineate Drainage
+-   Render 3D Map
 -   Save output
 
-## 1. AOI's & projection
+## 1. Declare AOI & Projection
 
 ```{r pop-aoi}
 #| warning: false
 #| message: false
+#| error: false
 #| echo: true
 #| eval: true
 #| comment: NA
 
-crs_master <- sf::st_crs("epsg:4326")
+crs_master = sf::st_crs("epsg:3857")
+
+country = giscoR::gisco_get_countries(
+  country = "Malawi", resolution = "3") |>
+  sf::st_cast() |> sf::st_transform(crs_master)
+
+lake  = sf::st_read("./assets/inputs/lakes_site.shp", quiet=T) |>
+  sf::st_cast() |> sf::st_transform(crs_master)
+
+bbox = lake |>
+  sf::st_buffer(dist = 60000) |> 
+  sf::st_bbox() |>
+  sf::st_as_sfc() |>
+  sf::st_sf()
+
+# Interactive map mode: "view"
+tmap::tmap_mode("view")
+tmap::tm_shape(country) + tmap::tm_borders(lwd = 1, col = "green") +
+  tmap::tm_shape(bbox) + tmap::tm_borders(lwd = 2, col = "orange") +
+  tmap::tm_shape(lake) + tmap::tm_borders(lwd = 2, col = "blue") +
+  tmap::tm_basemap("Esri.WorldImagery")
+```
+
+##### Figure 1: Interactive map of area of interest polygons (AOI)
+
+## 2. Process DEM
+
+```{r watershed-dem}
+#| warning: false
+#| message: false
+#| error: false
+#| echo: true
+#| eval: true
+#| comment: NA
+
+# z = 12: 1-Arc Second Resolution
+# z = 11: 3-Arc Second Resolution
+# z = 10: 5-Arc Second Resolution
+dem = elevatr::get_elev_raster(bbox, z=10, clip="locations") |> terra::rast() 
+names(dem) = "elevation" 
+
+dem_100m  = stars::st_warp(
+  stars::st_as_stars(dem), 
+  cellsize=100, crs=sf::st_crs(crs_master)) |>
+  terra::rast()
+
+# Apply breaching & filling to depressions & flats
+dem_breach = flowdem::breach(dem_100m) 
+dem_fill   = flowdem::fill(dem_breach, epsilon=T)  
+#flowdem::fill_basins() # coastal basins
+
+# Calculate flow direction & flow accumulation
+dem_dir =  flowdem::dirs(dem_fill, mode="d8")
+dem_acc =  flowdem::dirs(dem_dir, mode="d8")
+
+# Delineate watershed drainage area
+watershed = flowdem::watershed(dem_dir, lake) |>
+  terra::as.polygons(dissolve = TRUE) |>
+  sf::st_as_sf()
+
+terra::writeRaster(dem_100m,  "./assets/TIF/dem_chilwa_00_raw.tif", overwrite=T)
+terra::writeRaster(dem_breach, "./assets/TIF/dem_chilwa_01_breached.tif", overwrite=T)
+terra::writeRaster(dem_fill, "./assets/TIF/dem_chilwa_02_filled.tif", overwrite=T)
+terra::writeRaster(dem_dir, "./assets/TIF/dem_chilwa_03_flow_direction.tif", overwrite=T)
+terra::writeRaster(dem_acc, "./assets/TIF/dem_chilwa_04_flow_accumulation.tif", overwrite=T)
+sf::st_write(watershed, "./assets/SHP/watershed_chilwa_05_flowdem.shp", delete_dsn=T)
+
+# Visualize effects of hydrographic conditioning
+dem_breach_diff <- dem_100m - dem_breach
+dem_breach_diff[dem_breach_diff == 0] <- NA
+dem_fill_diff <- dem_100m - dem_fill
+dem_fill_diff[dem_fill_diff == 0] <- NA
+
+tmap::tmap_mode("plot")
+tmap::tm_shape(dem_breach_diff) + tmap::tm_raster(col.scale = tm_scale_continuous(
+    values = hcl.colors(50, rev = TRUE),midpoint = 0), col.legend = tm_legend(title="")) +
+  tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size = .5) +
+  tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("RIGHT", "top")) +
+  tmap::tm_graticules(lines=T,labels.rot=c(0,90),lwd=0.2) +
+  tmap::tm_title("Effects of Breaching", size=.8) -> tm_breach
+
+tmap::tm_shape(dem_fill_diff) + tmap::tm_raster(col.scale = tm_scale_continuous(
+    values = hcl.colors(50, rev = TRUE),midpoint = 0), col.legend = tm_legend(title="")) +
+  tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size = .5) +
+  tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("RIGHT", "top")) +
+  tmap::tm_graticules(lines=T,labels.rot=c(0,90),lwd=0.2) +
+  tmap::tm_title("Effects of Filling", size=.8) -> tm_fill
+
+tmap::tmap_arrange(tm_breach, tm_fill, nrow=1)
+```
+
+```{r watershed-dem}
+#| warning: false
+#| message: false
+#| error: false
+#| echo: true
+#| eval: true
+#| comment: NA
+
+dem_100m   = terra::rast("./assets/TIF/dem_chilwa_00_raw.tif")
+dem_breach = terra::rast("./assets/TIF/dem_chilwa_01_breached.tif")
+dem_fill   = terra::rast("./assets/TIF/dem_chilwa_02_filled.tif")
+
+# Visualize hydrographic conditioning
+dem_breach_diff <- dem_100m - dem_breach
+dem_breach_diff[dem_breach_diff == 0] <- NA
+dem_fill_diff <- dem_100m - dem_fill
+dem_fill_diff[dem_fill_diff == 0] <- NA
+
+tmap::tmap_mode("plot")
+tmap::tm_shape(dem_breach_diff) + tmap::tm_raster(col.scale = tm_scale_continuous(
+    values = hcl.colors(50, rev = TRUE),midpoint = 0), col.legend = tm_legend(title="")) +
+  tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size = .5) +
+  tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("RIGHT", "top")) +
+  tmap::tm_graticules(lines=T,labels.rot=c(0,90),lwd=0.2) +
+  tmap::tm_title("Effects of Breaching", size=.8) -> tm_breach
+
+tmap::tm_shape(dem_fill_diff) + tmap::tm_raster(col.scale = tm_scale_continuous(
+    values = hcl.colors(50, rev = TRUE),midpoint = 0), col.legend = tm_legend(title="")) +
+  tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size = .5) +
+  tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("RIGHT", "top")) +
+  tmap::tm_graticules(lines=T,labels.rot=c(0,90),lwd=0.2) +
+  tmap::tm_title("Effects of Filling", size=.8) -> tm_fill
+
+tmap::tmap_arrange(tm_breach, tm_fill, nrow=1)
+```
+##### Figure 2: Static maps of hydrographically conditioned and unconditioned digital elevation models.
+
+
+```{r}
+#| eval: false
+
+whitebox::wbt_extract_streams(
+  flow_accum =  "./assets/TIF/dem_chilwa_flacc_100m.tif",
+  threshold = 100, # 100 cells for 1 km2
+  output = "./assets/TIF/dem_network_1km2.tif",
+  zero_background = T
+  )
+
+dem_dir_5arc = dem_condt_5arc |> flowdem::dirs(mode="d8")
+dem_acc_7arc = dem_dir_7arc |> flowdem::accum(mode="d8")
+dem_acc_5arc = dem_dir_5arc |> flowdem::accum(mode="d8")
+terra::writeRaster(dem, "./assets/TIF/dem_3arc_chilwa.tif")
+```
+
+##### Figure 2: Interactive maps of hydrographically conditioned and unconditioned digital elevation models.
+
+
+
+```{r}
+#| warning: false
+#| message: false
+#| echo: false
+#| eval: false
+#| comment: NA
+
+watershed= terra::vect("./assets/inputs/hydro/hybas_lake_af_lev04_v1c.shp")
+rivers   = terra::vect("./assets/inputs/hydro/HydroRIVERS_v10.shp") 
+
+rivers_country = terra::crop(rivers, aoi_country) |> 
+  sf::st_as_sf() |> sf::st_cast() |> sf::st_transform(crs_master)
+rivers_site = terra::crop(rivers, aoi_site) |> 
+  sf::st_as_sf() |> sf::st_cast() |> sf::st_transform(crs_master)
+
+lakes_country = terra::crop(lakes, aoi_country) |> 
+  sf::st_as_sf() |> sf::st_cast() |> sf::st_transform(crs_master)
+lakes_site = terra::crop(lakes, aoi_site) |> 
+  sf::st_as_sf() |> sf::st_cast() |> sf::st_transform(crs_master)
+
 aoi_site   = sf::read_sf("./assets/inputs/chilwa_watershed_4326.shp") |>
   st_cast() |> st_transform(crs_master)
 aoi_country <- giscoR::gisco_get_countries(country = "Malawi", resolution = "3") |>
@@ -104,18 +282,24 @@ tmap::tm_shape(aoi_country) +
   tmap::tm_borders(lwd = 1, col = "green") +
   tmap::tm_shape(aoi_site) +
   tmap::tm_borders(lwd = 2, col = "red")
+
+tmap::tm_shape(dem_site) + tmap::tm_raster(palette = "Greens") +
+  tmap::tm_shape(rivers_site) + tm_lines(col = "steelblue") +
+  tmap::tm_shape(lakes_site) + tm_fill ("steelblue") +
+  tmap::tm_shape(watershed_site) + tm_borders(col = "red", lwd=1)
 ```
 
-##### Figure 1: Interactive map showing area of interest polygons (AOI)
 
-## 2. Download hydro data
 
-```{r watershed-inputs}
+```{r watershed-inputs-deprecated}
 #| warning: false
 #| message: false
-#| echo: true
+#| echo: false
 #| eval: false
 #| comment: NA
+#
+## 2. Download hydro data
+
 
 #url_rivers <- "https://data.hydrosheds.org/file/HydroRIVERS/HydroRIVERS_v10_shp.zip"
 #url_lakes <- "https://data.hydrosheds.org/file/hydrolakes/HydroLAKES_polys_v10_shp.zip"
@@ -154,11 +338,11 @@ sf::st_write(watershed_site, "./assets/inputs/watershed_site.shp")
 #  tmap::tm_shape(watershed_site) + tm_borders(col = "red", lwd=1)
 ```
 
-```{r watershed-extracted}
+```{r watershed-extracted-deprecated}
 #| warning: false
 #| message: false
 #| echo: false
-#| eval: true
+#| eval: false
 
 rivers_country = sf::st_read("./assets/inputs/rivers_country.shp", quiet=T) |> st_cast("LINESTRING")
 rivers_site    = sf::st_read("./assets/inputs/rivers_site.shp", quiet=T)    |> st_cast("LINESTRING")
@@ -169,36 +353,61 @@ watershed_site = sf::st_read("./assets/inputs/watershed_site.shp", quiet=T) |> s
 #tmap::tm_shape(rivers_site) + tm_lines(col = "steelblue") +
 #  tmap::tm_shape(lakes_site) + tm_fill ("steelblue") +
 #  tmap::tm_shape(watershed_site) + tm_borders(col = "red", lwd=1)
+##### Figure 2: Interactive map showing extracted hydrographic layers
 ```
 
-##### Figure 2: Interactive map showing extracted hydrographic layers
 
-## 3. Download DEM
 
-```{r watershed-dem}
+
+## 2. Process DEM
+
+**Note:** More efficient conditioning algorithms available
+with `RichDEM` library [^1]
+
+```{r}
+#| comment: NA
 #| warning: false
 #| message: false
+#| eval: false
 #| echo: true
-#| eval: true
-#| comment: NA
+crs_master = "EPSG:3005"
+island_shoreline = sf::st_read("./assets/SHP/island_shoreline.shp", quiet=T)
 
-dem_site = elevatr::get_elev_raster(
-  locations = watershed_site,
-  z = 10, clip = "locations")
+# z = 12: 1-Arc Second 
+# z = 11: 3-Arc Second 
+# z = 10: 5-Arc Second 
+dem_7arc = elevatr::get_elev_raster(island_shoreline, z=9,clip="locations")|>
+  terra::rast()|> 
+  terra::crop(terra::vect(island_shoreline)) |>  
+  terra::project(crs_master)
 
-dem_site = dem_site |>
-  terra::rast() |>
-  terra::project(crs(watershed_site))
+#Process DEM by breaching & filling depressions & flats
+dem_condt_7arc  = dem_7arc |> 
+  flowdem::breach() |>
+  flowdem::fill(epsilon=T) 
+  #flowdem::fill_basins() # costal basins
 
-names(dem_site)[1] <- "Elevation (m asl)"
+# Calculate flow direction & accumulation
+dem_dir_7arc = dem_condt_7arc |> flowdem::dirs(mode="d8")
+dem_dir_5arc = dem_condt_5arc |> flowdem::dirs(mode="d8")
+dem_acc_7arc = dem_dir_7arc |> flowdem::accum(mode="d8")
+dem_acc_5arc = dem_dir_5arc |> flowdem::accum(mode="d8")
 
-tmap::tm_shape(dem_site) + tmap::tm_raster(palette = "Greens") +
-  tmap::tm_shape(rivers_site) + tm_lines(col = "steelblue") +
-  tmap::tm_shape(lakes_site) + tm_fill ("steelblue") +
-  tmap::tm_shape(watershed_site) + tm_borders(col = "red", lwd=1)
+#tmap::tm_shape(dem) + 
+#  tmap::tm_raster(
+#    col.scale = tm_scale_continuous(values = "viridis"),
+#    col.legend = tm_legend(title = "Elevation (m)", reverse = T)) + 
+#  tmap::tm_graticules(lines = T, labels.rot = c(0, 90), lwd = 0.2) +
+#  tmap::tm_scalebar(position = c("LEFT", "BOTTOM"), text.size = 0.5) + 
+#  tmap::tm_compass(color.dark="gray60",text.color="gray60")+
+#  tmap::tm_basemap("Esri.WorldImagery")
+writeRaster(dem_condt_7arc, "./assets/TIF/dem_7arc_condt.tif", overwrite=T)
+writeRaster(dem_condt_5arc, "./assets/TIF/dem_5arc_condt.tif", overwrite=T)
+writeRaster(dem_dir_7arc, "./assets/TIF/dem_7arc_dir.tif", overwrite=T)
+writeRaster(dem_dir_5arc, "./assets/TIF/dem_5arc_dir.tif", overwrite=T)
+writeRaster(dem_acc_7arc, "./assets/TIF/dem_7arc_acc.tif", overwrite=T)
+writeRaster(dem_acc_5arc, "./assets/TIF/dem_5arc_acc.tif", overwrite=T)
 ```
-
-##### Figure 3: Interactive map showing digital elevation model and hydrographic layers.
 
 ## 4. Build 3D map
 

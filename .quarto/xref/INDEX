@@ -64,5 +64,14 @@
   },
   "assets/SHP/lake_comox.qmd": {
     "lake_comox.html": "2fea5e8d"
+  },
+  "topo-map.qmd": {
+    "topo-map.html": "c9daba9e"
+  },
+  "assets/SHP/aoi_watershed.qmd": {
+    "aoi_watershed.html": "4efa4543"
+  },
+  "climate-map.qmd": {
+    "climate-map.html": "7723563b"
   }
 }

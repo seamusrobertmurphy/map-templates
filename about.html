@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>Projects – Map Templates</title>
+<title>Seamus Murphy – Map Templates</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -29,13 +29,10 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-search/fuse.min.js"></script>
 <script src="site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="./">
-<script src="site_libs/quarto-listing/list.min.js"></script>
-<script src="site_libs/quarto-listing/quarto-listing.js"></script>
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-ea385d0e468b0dd5ea5bf0780b1290d9.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
@@ -68,67 +65,10 @@ ul.task-list li input[type="checkbox"] {
     "search-label": "Search"
   }
 }</script>
-<script>
 
-  window.document.addEventListener("DOMContentLoaded", function (_event) {
-    const listingTargetEl = window.document.querySelector('#listing-listing .list');
-    if (!listingTargetEl) {
-      // No listing discovered, do not attach.
-      return; 
-    }
 
-    const options = {
-      valueNames: ['listing-title','listing-author','listing-subtitle','listing-image','listing-description',{ data: ['index'] },{ data: ['categories'] },{ data: ['listing-date-sort'] },{ data: ['listing-file-modified-sort'] }],
-      
-      searchColumns: ["listing-title","listing-author","listing-subtitle","listing-image","listing-description"],
-    };
-
-    window['quarto-listings'] = window['quarto-listings'] || {};
-    window['quarto-listings']['listing-listing'] = new List('listing-listing', options);
-
-    if (window['quarto-listing-loaded']) {
-      window['quarto-listing-loaded']();
-    }
-  });
-
-  window.addEventListener('hashchange',() => {
-    if (window['quarto-listing-loaded']) {
-      window['quarto-listing-loaded']();
-    }
-  })
-  </script>
-
-  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
-
-<script type="text/javascript">
-const typesetMath = (el) => {
-  if (window.MathJax) {
-    // MathJax Typeset
-    window.MathJax.typeset([el]);
-  } else if (window.katex) {
-    // KaTeX Render
-    var mathElements = el.getElementsByClassName("math");
-    var macros = [];
-    for (var i = 0; i < mathElements.length; i++) {
-      var texText = mathElements[i].firstChild;
-      if (mathElements[i].tagName == "SPAN") {
-        window.katex.render(texText.data, mathElements[i], {
-          displayMode: mathElements[i].classList.contains('display'),
-          throwOnError: false,
-          macros: macros,
-          fleqn: false
-        });
-      }
-    }
-  }
-}
-window.Quarto = {
-  typesetMath
-};
-</script>
-
-<meta property="og:title" content="Projects – Map Templates">
+<meta property="og:title" content="Seamus Murphy – Map Templates">
+<meta property="og:description" content="Forester | Data Scientist">
 <meta property="og:image" content="https://seamusrobertmurphy.quarto.pub/map-templates/assets/profile.jpg">
 <meta property="og:site_name" content="Map Templates">
 </head>
@@ -156,23 +96,27 @@ window.Quarto = {
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="./site-map.html"> 
-<span class="menu-text">Site Maps</span></a>
-  </li>  
-  <li class="nav-item">
-    <a class="nav-link" href="./locator-map.html"> 
-<span class="menu-text">Locator Maps</span></a>
+<span class="menu-text">Sites</span></a>
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="./watershed-map.html"> 
-<span class="menu-text">Watershed Maps</span></a>
+<span class="menu-text">Watershed</span></a>
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="./stream-map.html"> 
-<span class="menu-text">Riparian Maps</span></a>
+<span class="menu-text">Riparian</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./topo-map.html"> 
+<span class="menu-text">Topography</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="./climate-map.html"> 
+<span class="menu-text">Climate</span></a>
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="./population-map.html"> 
-<span class="menu-text">Population Maps</span></a>
+<span class="menu-text">Demography</span></a>
   </li>  
 </ul>
           </div> <!-- /navcollapse -->
@@ -201,7 +145,7 @@ window.Quarto = {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./about.html">About</a></li><li class="breadcrumb-item"><a href="./projects.html">Projects</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./about.html">About</a></li><li class="breadcrumb-item"><a href="./about.html">Resume</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -227,12 +171,6 @@ window.Quarto = {
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./locator-map.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Locator Maps</span></a>
-  </div>
-</li>
-        <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
   <a href="./watershed-map.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Watershed Maps</span></a>
   </div>
@@ -245,8 +183,20 @@ window.Quarto = {
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
+  <a href="./topo-map.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Topography Maps</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./climate-map.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Climate Maps</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
   <a href="./population-map.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">Population Maps</span></a>
+ <span class="menu-text">Demography Maps</span></a>
   </div>
 </li>
         <li class="sidebar-item sidebar-item-section">
@@ -260,14 +210,8 @@ window.Quarto = {
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./about.html" class="sidebar-item-text sidebar-link">
+  <a href="./about.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">Resume</span></a>
-  </div>
-</li>
-          <li class="sidebar-item">
-  <div class="sidebar-item-container"> 
-  <a href="./projects.html" class="sidebar-item-text sidebar-link active">
- <span class="menu-text">Projects</span></a>
   </div>
 </li>
       </ul>
@@ -279,379 +223,39 @@ window.Quarto = {
 <!-- margin-sidebar -->
     
 <!-- main -->
-<main class="content" id="quarto-document-content">
-
-<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./about.html">About</a></li><li class="breadcrumb-item"><a href="./projects.html">Projects</a></li></ol></nav>
+<div class="quarto-about-trestles">
+  <div class="about-entity">
+    <img src="assets/profile.jpg" class="about-image
+  round " style="height: 20em; width: 20em;">
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./about.html">About</a></li><li class="breadcrumb-item"><a href="./about.html">Resume</a></li></ol></nav>
 <div class="quarto-title">
-<h1 class="title">Projects</h1>
+<h1 class="title">Seamus Murphy</h1>
+<p class="subtitle lead">Forester | Data Scientist</p>
 </div>
-
-
-
 <div class="quarto-title-meta">
-
-    
-  
-    
   </div>
-  
-
-
 </header>
+    <div class="about-links">
+  <a href="https://linkedin.com/in/seamusrobertmurphy" class="about-link" rel="" target="">
+    <i class="bi bi-linkedin"></i>
+     <span class="about-link-text">LinkedIn</span>
+  </a>
+  <a href="https://github.com/seamusrobertmurphy" class="about-link" rel="" target="">
+    <i class="bi bi-github"></i>
+     <span class="about-link-text">Github</span>
+  </a>
+</div>
+  </div>
+  <div class="about-contents"><main class="content" id="quarto-document-content">
+<div id="about">
+</div>
 
 
-
-
-
-
-<div class="quarto-listing quarto-listing-container-default" id="listing-listing">
-<div class="list quarto-listing-default">
-<div class="quarto-post image-right" data-index="0" data-listing-file-modified-sort="1758510910559" data-listing-reading-time-sort="3" data-listing-word-count-sort="530">
-<div class="thumbnail"><a href="./locator-map.html" class="no-external">
-
-<div class="listing-item-img-placeholder card-img-top" >&nbsp;</div>
-
-</a></div>
-<div class="body">
-<h3 class="no-anchor listing-title">
-<a href="./locator-map.html" class="no-external">Locator Maps</a>
-</h3>
-<div class="listing-subtitle">
-<a href="./locator-map.html" class="no-external"></a>
+</main></div>
 </div>
-<div class="delink listing-description"><a href="./locator-map.html" class="no-external">
-Figure 2: Interactive map showing site boundary, national borders, and national bounding box
-</a></div>
-</div>
-<div class="metadata">
-<a href="./locator-map.html" class="no-external">
-</a>
-</div>
-</div>
-<div class="quarto-post image-right" data-index="1" data-listing-file-modified-sort="1758510707959" data-listing-reading-time-sort="6" data-listing-word-count-sort="1051">
-<div class="thumbnail"><a href="./population-map.html" class="no-external">
-
-<div class="listing-item-img-placeholder card-img-top" >&nbsp;</div>
-
-</a></div>
-<div class="body">
-<h3 class="no-anchor listing-title">
-<a href="./population-map.html" class="no-external">Population Maps</a>
-</h3>
-<div class="listing-subtitle">
-<a href="./population-map.html" class="no-external"></a>
-</div>
-<div class="delink listing-description"><a href="./population-map.html" class="no-external">
-<style>#legend01 { background: #FFFFFF; opacity: 1}</style>
-
-</a></div>
-</div>
-<div class="metadata">
-<a href="./population-map.html" class="no-external">
-</a>
-</div>
-</div>
-<div class="quarto-post image-right" data-index="2" data-listing-file-modified-sort="1758509893775" data-listing-reading-time-sort="13" data-listing-word-count-sort="2511">
-<div class="thumbnail"><a href="./stream-map.html" class="no-external">
-
-<p class="card-img-top"><img src="stream-map_files/figure-html/unnamed-chunk-5-1.png"  class="thumbnail-image card-img"/></p>
-
-</a></div>
-<div class="body">
-<h3 class="no-anchor listing-title">
-<a href="./stream-map.html" class="no-external">Riparian Maps</a>
-</h3>
-<div class="listing-subtitle">
-<a href="./stream-map.html" class="no-external"></a>
-</div>
-<div class="delink listing-description"><a href="./stream-map.html" class="no-external">
-<strong>Note:</strong> More efficient conditioning algorithms available with <code>RichDEM</code> library <sup>1</sup>
-</a></div>
-</div>
-<div class="metadata">
-<a href="./stream-map.html" class="no-external">
-</a>
-</div>
-</div>
-<div class="quarto-post image-right" data-index="3" data-listing-file-modified-sort="1757827102130" data-listing-reading-time-sort="1" data-listing-word-count-sort="1">
-<div class="thumbnail"><a href="./about.html" class="no-external">
-
-<img loading="lazy" src="./assets/profile.jpg" class="thumbnail-image">
-
-</a></div>
-<div class="body">
-<h3 class="no-anchor listing-title">
-<a href="./about.html" class="no-external">Seamus Murphy</a>
-</h3>
-<div class="listing-subtitle">
-<a href="./about.html" class="no-external">Forester | Data Scientist</a>
-</div>
-<div class="delink listing-description"><a href="./about.html" class="no-external">
-
-</a></div>
-</div>
-<div class="metadata">
-<a href="./about.html" class="no-external">
-</a>
-</div>
-</div>
-<div class="quarto-post image-right" data-index="4" data-listing-file-modified-sort="1758510491656" data-listing-reading-time-sort="3" data-listing-word-count-sort="561">
-<div class="thumbnail"><a href="./site-map.html" class="no-external">
-
-<div class="listing-item-img-placeholder card-img-top" >&nbsp;</div>
-
-</a></div>
-<div class="body">
-<h3 class="no-anchor listing-title">
-<a href="./site-map.html" class="no-external">Site Maps</a>
-</h3>
-<div class="listing-subtitle">
-<a href="./site-map.html" class="no-external"></a>
-</div>
-<div class="delink listing-description"><a href="./site-map.html" class="no-external">
-Figure 2: Interactive map showing project boundary and ESRI’s basemap
-</a></div>
-</div>
-<div class="metadata">
-<a href="./site-map.html" class="no-external">
-</a>
-</div>
-</div>
-<div class="quarto-post image-right" data-index="5" data-listing-file-modified-sort="1758510160151" data-listing-reading-time-sort="6" data-listing-word-count-sort="1075">
-<div class="thumbnail"><a href="./watershed-map.html" class="no-external">
-
-<div class="listing-item-img-placeholder card-img-top" >&nbsp;</div>
-
-</a></div>
-<div class="body">
-<h3 class="no-anchor listing-title">
-<a href="./watershed-map.html" class="no-external">Watershed Maps</a>
-</h3>
-<div class="listing-subtitle">
-<a href="./watershed-map.html" class="no-external"></a>
-</div>
-<div class="delink listing-description"><a href="./watershed-map.html" class="no-external">
-<style>#legend01 { background: #FFFFFF; opacity: 1}</style>
-
-</a></div>
-</div>
-<div class="metadata">
-<a href="./watershed-map.html" class="no-external">
-</a>
-</div>
-</div>
-<div class="quarto-post image-right" data-index="6" data-listing-file-modified-sort="1757827102129" data-listing-reading-time-sort="1" data-listing-word-count-sort="1">
-<div class="thumbnail"><a href="./index.html" class="no-external">
-
-<div class="listing-item-img-placeholder card-img-top" >&nbsp;</div>
-
-</a></div>
-<div class="body">
-<h3 class="no-anchor listing-title">
-<a href="./index.html" class="no-external"></a>
-</h3>
-<div class="listing-subtitle">
-<a href="./index.html" class="no-external"></a>
-</div>
-<div class="delink listing-description"><a href="./index.html" class="no-external">
-
-
-
-</a></div>
-</div>
-<div class="metadata">
-<a href="./index.html" class="no-external">
-</a>
-</div>
-</div>
-<div class="quarto-post image-right" data-index="7" data-listing-file-modified-sort="1758071631349" data-listing-reading-time-sort="1" data-listing-word-count-sort="144">
-<div class="thumbnail"><a href="./assets/SHP/lake_comox.html" class="no-external">
-
-<div class="listing-item-img-placeholder card-img-top" >&nbsp;</div>
-
-</a></div>
-<div class="body">
-<h3 class="no-anchor listing-title">
-<a href="./assets/SHP/lake_comox.html" class="no-external"></a>
-</h3>
-<div class="listing-subtitle">
-<a href="./assets/SHP/lake_comox.html" class="no-external"></a>
-</div>
-<div class="delink listing-description"><a href="./assets/SHP/lake_comox.html" class="no-external">
-<abstract></abstract> <links> <dates> <fees></fees> <encoding></encoding> <crs> <spatialrefsys nativeformat="Wkt"> <wkt>GEOGCRS[“WGS 84”,ENSEMBLE[“World Geodetic System 1984 ensemble”,MEMBER[“World Geodetic System 1984 (Transit)”],MEMBER[“World Geodetic System 1984…</wkt><proj4></proj4><srsid></srsid><srid></srid><authid></authid><description></description><projectionacronym></projectionacronym><ellipsoidacronym></ellipsoidacronym><geographicflag></geographicflag></spatialrefsys></crs><extent></extent></dates></links>
-</a></div>
-</div>
-<div class="metadata">
-<a href="./assets/SHP/lake_comox.html" class="no-external">
-</a>
-</div>
-</div>
-<div class="quarto-post image-right" data-index="8" data-listing-file-modified-sort="1757827102635" data-listing-reading-time-sort="1" data-listing-word-count-sort="95">
-<div class="thumbnail"><a href="./assets/inputs/rivers_site.html" class="no-external">
-
-<div class="listing-item-img-placeholder card-img-top" >&nbsp;</div>
-
-</a></div>
-<div class="body">
-<h3 class="no-anchor listing-title">
-<a href="./assets/inputs/rivers_site.html" class="no-external"></a>
-</h3>
-<div class="listing-subtitle">
-<a href="./assets/inputs/rivers_site.html" class="no-external"></a>
-</div>
-<div class="delink listing-description"><a href="./assets/inputs/rivers_site.html" class="no-external">
-<abstract></abstract> <links> <dates> <fees></fees> <encoding></encoding> <crs> <spatialrefsys nativeformat="Wkt"> <wkt></wkt> <proj4></proj4> <srsid>0</srsid> <srid>0</srid> <authid></authid> <description></description> <projectionacronym></projectionacronym> <ellipsoidacronym></ellipsoidacronym> <geographicflag>false</geographicflag> </spatialrefsys> </crs> <extent> </extent></dates></links>
-</a></div>
-</div>
-<div class="metadata">
-<a href="./assets/inputs/rivers_site.html" class="no-external">
-</a>
-</div>
-</div>
-<div class="quarto-post image-right" data-index="9" data-listing-file-modified-sort="1757827102652" data-listing-reading-time-sort="1" data-listing-word-count-sort="136">
-<div class="thumbnail"><a href="./assets/inputs/lakes_country.html" class="no-external">
-
-<div class="listing-item-img-placeholder card-img-top" >&nbsp;</div>
-
-</a></div>
-<div class="body">
-<h3 class="no-anchor listing-title">
-<a href="./assets/inputs/lakes_country.html" class="no-external"></a>
-</h3>
-<div class="listing-subtitle">
-<a href="./assets/inputs/lakes_country.html" class="no-external"></a>
-</div>
-<div class="delink listing-description"><a href="./assets/inputs/lakes_country.html" class="no-external">
-<abstract></abstract> <links> <dates> <fees></fees> <encoding></encoding> <crs> <spatialrefsys nativeformat="Wkt"> <wkt>GEOGCRS[“WGS 84”,ENSEMBLE[“World Geodetic System 1984 ensemble”,MEMBER[“World Geodetic System 1984 (Transit)”],MEMBER[“World Geodetic System 1984…</wkt><proj4></proj4><srsid></srsid><srid></srid><authid></authid><description></description><projectionacronym></projectionacronym><ellipsoidacronym></ellipsoidacronym><geographicflag></geographicflag></spatialrefsys></crs><extent></extent></dates></links>
-</a></div>
-</div>
-<div class="metadata">
-<a href="./assets/inputs/lakes_country.html" class="no-external">
-</a>
-</div>
-</div>
-<div class="quarto-post image-right" data-index="10" data-listing-file-modified-sort="1757827102653" data-listing-reading-time-sort="1" data-listing-word-count-sort="138">
-<div class="thumbnail"><a href="./assets/inputs/chilwa_watershed_4326.html" class="no-external">
-
-<div class="listing-item-img-placeholder card-img-top" >&nbsp;</div>
-
-</a></div>
-<div class="body">
-<h3 class="no-anchor listing-title">
-<a href="./assets/inputs/chilwa_watershed_4326.html" class="no-external"></a>
-</h3>
-<div class="listing-subtitle">
-<a href="./assets/inputs/chilwa_watershed_4326.html" class="no-external"></a>
-</div>
-<div class="delink listing-description"><a href="./assets/inputs/chilwa_watershed_4326.html" class="no-external">
-<abstract></abstract> <links> <fees></fees> <encoding></encoding> <crs> <spatialrefsys nativeformat="Wkt"> <wkt>GEOGCRS[“WGS 84”,ENSEMBLE[“World Geodetic System 1984 ensemble”,MEMBER[“World Geodetic System 1984 (Transit)”],MEMBER[“World Geodetic System 1984…</wkt><proj4></proj4><srsid></srsid><srid></srid><authid></authid><description></description><projectionacronym></projectionacronym><ellipsoidacronym></ellipsoidacronym><geographicflag></geographicflag></spatialrefsys></crs><extent></extent></links>
-</a></div>
-</div>
-<div class="metadata">
-<a href="./assets/inputs/chilwa_watershed_4326.html" class="no-external">
-</a>
-</div>
-</div>
-<div class="quarto-post image-right" data-index="11" data-listing-file-modified-sort="1757827102655" data-listing-reading-time-sort="1" data-listing-word-count-sort="95">
-<div class="thumbnail"><a href="./assets/inputs/chilwa_watershed_extent.html" class="no-external">
-
-<div class="listing-item-img-placeholder card-img-top" >&nbsp;</div>
-
-</a></div>
-<div class="body">
-<h3 class="no-anchor listing-title">
-<a href="./assets/inputs/chilwa_watershed_extent.html" class="no-external"></a>
-</h3>
-<div class="listing-subtitle">
-<a href="./assets/inputs/chilwa_watershed_extent.html" class="no-external"></a>
-</div>
-<div class="delink listing-description"><a href="./assets/inputs/chilwa_watershed_extent.html" class="no-external">
-<abstract></abstract> <links> <dates> <fees></fees> <encoding></encoding> <crs> <spatialrefsys nativeformat="Wkt"> <wkt></wkt> <proj4></proj4> <srsid>0</srsid> <srid>0</srid> <authid></authid> <description></description> <projectionacronym></projectionacronym> <ellipsoidacronym></ellipsoidacronym> <geographicflag>false</geographicflag> </spatialrefsys> </crs> <extent> </extent></dates></links>
-</a></div>
-</div>
-<div class="metadata">
-<a href="./assets/inputs/chilwa_watershed_extent.html" class="no-external">
-</a>
-</div>
-</div>
-<div class="quarto-post image-right" data-index="12" data-listing-file-modified-sort="1757827102661" data-listing-reading-time-sort="1" data-listing-word-count-sort="136">
-<div class="thumbnail"><a href="./assets/inputs/lakes_site.html" class="no-external">
-
-<div class="listing-item-img-placeholder card-img-top" >&nbsp;</div>
-
-</a></div>
-<div class="body">
-<h3 class="no-anchor listing-title">
-<a href="./assets/inputs/lakes_site.html" class="no-external"></a>
-</h3>
-<div class="listing-subtitle">
-<a href="./assets/inputs/lakes_site.html" class="no-external"></a>
-</div>
-<div class="delink listing-description"><a href="./assets/inputs/lakes_site.html" class="no-external">
-<abstract></abstract> <links> <dates> <fees></fees> <encoding></encoding> <crs> <spatialrefsys nativeformat="Wkt"> <wkt>GEOGCRS[“WGS 84”,ENSEMBLE[“World Geodetic System 1984 ensemble”,MEMBER[“World Geodetic System 1984 (Transit)”],MEMBER[“World Geodetic System 1984…</wkt><proj4></proj4><srsid></srsid><srid></srid><authid></authid><description></description><projectionacronym></projectionacronym><ellipsoidacronym></ellipsoidacronym><geographicflag></geographicflag></spatialrefsys></crs><extent></extent></dates></links>
-</a></div>
-</div>
-<div class="metadata">
-<a href="./assets/inputs/lakes_site.html" class="no-external">
-</a>
-</div>
-</div>
-<div class="quarto-post image-right" data-index="13" data-listing-file-modified-sort="1757827102662" data-listing-reading-time-sort="1" data-listing-word-count-sort="136">
-<div class="thumbnail"><a href="./assets/inputs/rivers_country.html" class="no-external">
-
-<div class="listing-item-img-placeholder card-img-top" >&nbsp;</div>
-
-</a></div>
-<div class="body">
-<h3 class="no-anchor listing-title">
-<a href="./assets/inputs/rivers_country.html" class="no-external"></a>
-</h3>
-<div class="listing-subtitle">
-<a href="./assets/inputs/rivers_country.html" class="no-external"></a>
-</div>
-<div class="delink listing-description"><a href="./assets/inputs/rivers_country.html" class="no-external">
-<abstract></abstract> <links> <dates> <fees></fees> <encoding></encoding> <crs> <spatialrefsys nativeformat="Wkt"> <wkt>GEOGCRS[“WGS 84”,ENSEMBLE[“World Geodetic System 1984 ensemble”,MEMBER[“World Geodetic System 1984 (Transit)”],MEMBER[“World Geodetic System 1984…</wkt><proj4></proj4><srsid></srsid><srid></srid><authid></authid><description></description><projectionacronym></projectionacronym><ellipsoidacronym></ellipsoidacronym><geographicflag></geographicflag></spatialrefsys></crs><extent></extent></dates></links>
-</a></div>
-</div>
-<div class="metadata">
-<a href="./assets/inputs/rivers_country.html" class="no-external">
-</a>
-</div>
-</div>
-<div class="quarto-post image-right" data-index="14" data-listing-file-modified-sort="1757827102665" data-listing-reading-time-sort="1" data-listing-word-count-sort="136">
-<div class="thumbnail"><a href="./assets/inputs/watershed_site.html" class="no-external">
-
-<div class="listing-item-img-placeholder card-img-top" >&nbsp;</div>
-
-</a></div>
-<div class="body">
-<h3 class="no-anchor listing-title">
-<a href="./assets/inputs/watershed_site.html" class="no-external"></a>
-</h3>
-<div class="listing-subtitle">
-<a href="./assets/inputs/watershed_site.html" class="no-external"></a>
-</div>
-<div class="delink listing-description"><a href="./assets/inputs/watershed_site.html" class="no-external">
-<abstract></abstract> <links> <dates> <fees></fees> <encoding></encoding> <crs> <spatialrefsys nativeformat="Wkt"> <wkt>GEOGCRS[“WGS 84”,ENSEMBLE[“World Geodetic System 1984 ensemble”,MEMBER[“World Geodetic System 1984 (Transit)”],MEMBER[“World Geodetic System 1984…</wkt><proj4></proj4><srsid></srsid><srid></srid><authid></authid><description></description><projectionacronym></projectionacronym><ellipsoidacronym></ellipsoidacronym><geographicflag></geographicflag></spatialrefsys></crs><extent></extent></dates></links>
-</a></div>
-</div>
-<div class="metadata">
-<a href="./assets/inputs/watershed_site.html" class="no-external">
-</a>
-</div>
-</div>
-</div>
-<div class="listing-no-matching d-none">No matching items</div>
-</div></main> <!-- /main -->
+ <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
-    const icon = "";
-    const anchorJS = new window.AnchorJS();
-    anchorJS.options = {
-      placement: 'right',
-      icon: icon
-    };
-    anchorJS.add('.anchored');
     const isCodeAnnotation = (el) => {
       for (const clz of el.classList) {
         if (clz.startsWith('code-annotation-')) {                     

@@ -10,15 +10,17 @@ website:
     right:
       - text: "Home"
         href: index.qmd
-      - text: "Site Maps"
+      - text: "Sites"
         href: site-map.qmd
-      - text: "Locator Maps"
-        href: locator-map.qmd
-      - text: "Watershed Maps"
+      - text: "Watershed"
         href: watershed-map.qmd
-      - text: "Riparian Maps"
+      - text: "Riparian"
         href: stream-map.qmd 
-      - text: "Population Maps"
+      - text: "Topography"
+        href: topo-map.qmd 
+      - text: "Climate"
+        href: climate-map.qmd
+      - text: "Demography"
         href: population-map.qmd
     tools:
       - icon: github
@@ -39,13 +41,15 @@ website:
         href: index.qmd
       - text: "Site Maps"
         href: site-map.qmd
-      - text: "Locator Maps"
-        href: locator-map.qmd
       - text: "Watershed Maps"
         href: watershed-map.qmd
       - text: "Riparian Maps"
         href: stream-map.qmd 
-      - text: "Population Maps"
+      - text: "Topography Maps"
+        href: topo-map.qmd 
+      - text: "Climate Maps"
+        href: climate-map.qmd
+      - text: "Demography Maps"
         href: population-map.qmd
       - section: "About"
         contents:
