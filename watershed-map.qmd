@@ -161,12 +161,13 @@ watershed = flowdem::watershed(dem_dir, lake) |>
   terra::as.polygons(dissolve = TRUE) |>
   sf::st_as_sf()
 
-terra::writeRaster(dem_100m,  "./assets/TIF/dem_chilwa_00_raw.tif", overwrite=T)
-terra::writeRaster(dem_breach, "./assets/TIF/dem_chilwa_01_breached.tif", overwrite=T)
-terra::writeRaster(dem_fill, "./assets/TIF/dem_chilwa_02_filled.tif", overwrite=T)
-terra::writeRaster(dem_dir, "./assets/TIF/dem_chilwa_03_flow_direction.tif", overwrite=T)
-terra::writeRaster(dem_acc, "./assets/TIF/dem_chilwa_04_flow_accumulation.tif", overwrite=T)
-sf::st_write(watershed, "./assets/SHP/watershed_chilwa_05_flowdem.shp", delete_dsn=T)
+# Save elevation models to local directory
+#terra::writeRaster(dem_100m,  "./assets/TIF/dem_chilwa_00_raw.tif",overwrite=T)
+#terra::writeRaster(dem_breach, "./assets/TIF/dem_chilwa_01_breached.tif",overwrite=T)
+#terra::writeRaster(dem_fill, "./assets/TIF/dem_chilwa_02_filled.tif",overwrite=T)
+#terra::writeRaster(dem_dir, "./assets/TIF/dem_chilwa_03_flow_direction.tif",overwrite=T)
+#terra::writeRaster(dem_acc, "./assets/TIF/dem_chilwa_04_flow_accumulation.tif",overwrite=T)
+#sf::st_write(watershed, "./assets/SHP/watershed_chilwa_05_flowdem.shp", delete_dsn=T)
 
 # Visualize effects of hydrographic conditioning
 dem_breach_diff <- dem_100m - dem_breach
@@ -192,19 +193,19 @@ tmap::tm_shape(dem_fill_diff) + tmap::tm_raster(col.scale = tm_scale_continuous(
 tmap::tmap_arrange(tm_breach, tm_fill, nrow=1)
 ```
 
-```{r watershed-dem}
+```{r watershed-dem-hidden}
 #| warning: false
 #| message: false
 #| error: false
 #| echo: true
 #| eval: true
 #| comment: NA
-
+# Import outputs derived in chunk above
 dem_100m   = terra::rast("./assets/TIF/dem_chilwa_00_raw.tif")
 dem_breach = terra::rast("./assets/TIF/dem_chilwa_01_breached.tif")
 dem_fill   = terra::rast("./assets/TIF/dem_chilwa_02_filled.tif")
 
-# Visualize hydrographic conditioning
+# Visualize effects of hydrographic conditioning
 dem_breach_diff <- dem_100m - dem_breach
 dem_breach_diff[dem_breach_diff == 0] <- NA
 dem_fill_diff <- dem_100m - dem_fill
@@ -227,8 +228,8 @@ tmap::tm_shape(dem_fill_diff) + tmap::tm_raster(col.scale = tm_scale_continuous(
 
 tmap::tmap_arrange(tm_breach, tm_fill, nrow=1)
 ```
-##### Figure 2: Static maps of hydrographically conditioned and unconditioned digital elevation models.
 
+##### Figure 2: Static maps of hydr conditioned and unconditioned digital elevation models.
 
 ```{r}
 #| eval: false
@@ -247,8 +248,6 @@ terra::writeRaster(dem, "./assets/TIF/dem_3arc_chilwa.tif")
 ```
 
 ##### Figure 2: Interactive maps of hydrographically conditioned and unconditioned digital elevation models.
-
-
 
 ```{r}
 #| warning: false
@@ -288,8 +287,6 @@ tmap::tm_shape(dem_site) + tmap::tm_raster(palette = "Greens") +
   tmap::tm_shape(lakes_site) + tm_fill ("steelblue") +
   tmap::tm_shape(watershed_site) + tm_borders(col = "red", lwd=1)
 ```
-
-
 
 ```{r watershed-inputs-deprecated}
 #| warning: false
@@ -356,13 +353,10 @@ watershed_site = sf::st_read("./assets/inputs/watershed_site.shp", quiet=T) |> s
 ##### Figure 2: Interactive map showing extracted hydrographic layers
 ```
 
-
-
-
 ## 2. Process DEM
 
 **Note:** More efficient conditioning algorithms available
-with `RichDEM` library [^1]
+with `RichDEM` library \[\^1\]
 
 ```{r}
 #| comment: NA
