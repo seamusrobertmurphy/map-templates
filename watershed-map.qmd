@@ -53,13 +53,19 @@ easypackages::packages(
   prompt = F
   )
 
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE, 
+  warning = FALSE,
+  error = FALSE, 
+  comment = NA, 
+  tidy.opts = list(width.cutoff = 60)
+  ) 
+
+options(htmltools.dir.version = FALSE, htmltools.preserve.raw = FALSE)
+
 whitebox::install_whitebox()
 whitebox::wbt_init()
-knitr::opts_chunk$set(
-  echo = TRUE, message = FALSE, warning = FALSE,
-  error = FALSE, comment = NA, tidy.opts = list(width.cutoff = 6)
-)
-options(htmltools.dir.version = FALSE, htmltools.preserve.raw = FALSE)
 mapviewOptions(fgb = FALSE)
 sf::sf_use_s2(use_s2 = FALSE)
 ```
