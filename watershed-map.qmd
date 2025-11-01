@@ -6,30 +6,25 @@ format:
   html:
     toc: true
     toc-location: right
+    toc-depth: 4              
+    toc-expand: true 
     highlight-style: pygments
     page-layout: article
 
 editor_options: 
   markdown: 
     wrap: 60
+bibliography: references.bib
 ---
+
+### Environment Setup
 
 ```{r setup}
 #| warning: false
 #| message: false
-#| include: false
 #| error: false
-#| echo: false
+#| echo: true
 #| comment: NA
-
-# bleeding edge installs first
-#remotes::install_github("lucarraro/traudem", force=T)
-#pak::pkg_install("MPI")
-#devtools::install_github("lucarraro/traudem")
-#remotes::install_github("opengeos/whiteboxR", build=F)
-#remotes::install_github("giswqs/whiteboxR") # alternative repo
-
-#install.packages("easypackages")
 pacman::p_load(
   "bslib",
   "cli", "cols4all", "covr", "cowplot",
@@ -49,9 +44,9 @@ pacman::p_load(
   "ncdf4", "nnet",
   "openxlsx",
   "parallel", "plotly", "proj4", "PROJ", "progress", "purrr",
-  "randomForest", "rasterVis", "raster",
+  "randomForest", "rasterVis", "raster", 
   "rayshader", "rayvertex", 
-  "RColorBrewer", "rgl", "rsconnect", 
+  "RColorBrewer", "rgl", "rmapshaper", "rsconnect", 
   "RStoolbox", "rts", "rgrass",
   "s2", "sf", "scales", "spdep", "stars", 
   "stringr", "supercells",
@@ -60,6 +55,24 @@ pacman::p_load(
   "tmap", "tmaptools", "terrainr",
   "whitebox", "xgboost"
   )
+```
+
+```{r}
+#| warning: false
+#| message: false
+#| include: false
+#| error: false
+#| echo: false
+#| comment: NA
+
+# bleeding edge installs
+#remotes::install_github("lucarraro/traudem", force=T)
+#pak::pkg_install("MPI")
+#devtools::install_github("lucarraro/traudem")
+#remotes::install_github("opengeos/whiteboxR", build=F)
+#remotes::install_github("giswqs/whiteboxR") 
+#install.packages("easypackages")
+
 
 knitr::opts_chunk$set(
   echo = TRUE,
@@ -80,10 +93,11 @@ tmap::tmap_options(component.autoscale=F,
 
 # whitebox doesnt like working with files in memory
 # so we need to assign path to working directory 
-#whitebox::install_whitebox() # install whitebox and GRASS libraries
+# whitebox::install_whitebox() # install whitebox and GRASS libraries
 whitebox::wbt_init() # activate whitebox library in current directory
-traudem::taudem_sitrep() # Check traudem dependencies
 list.files("/usr/local/taudem/") # Check traudem.pkg installation
+# traudem::taudem_sitrep() # Check traudem dependencies
+# Ignore above message "Can't find  `MoveOutletsToStrm`"
 
 # ----- TauDEM d8 Check ---- #
 # all(sapply(d8, file.exists))
@@ -129,11 +143,12 @@ This analysis performs geomorphological processing of
 digital elevation models (DEMs) to extract critical
 watershed characteristics needed for hydrological modeling.
 We implement two complementary workflows for watershed
-delineation and hydraulic network analysis, comparing
-approaches using the `flowdem` and `whitebox` packages
-deploying `RichDEM`, `GDAL 3.11`, and `r-spatial` libraries.
+delineation and hydraulic network analysis, comparing two
+approaches using `flowdem` [@flowdem] and `whitebox`
+[@whitebox] packages with `RichDEM` [@RichDEM], `GDAL 3.11`
+[@GDAL] and `r-spatial` [@terra; @sf; @stars] libraries.
 
-## 2.1 Declare AOI & Projection
+## 2.1 Declare AOIs
 
 ```{r pop-aoi}
 #| warning: false
@@ -144,12 +159,10 @@ deploying `RichDEM`, `GDAL 3.11`, and `r-spatial` libraries.
 #| comment: NA
 
 crs_master = sf::st_crs("EPSG:3857")
-
 country = giscoR::gisco_get_countries(
   country = "Malawi", resolution = "3") |>
   sf::st_cast() |> sf::st_transform(crs_master)
-
-lake  = sf::st_read("./assets/inputs/lakes_site.shp", quiet=T) |>
+lake  = sf::st_read("./assets/inputs/lakes_site.shp") |>
   sf::st_cast() |> sf::st_transform(crs_master)
 
 bbox = lake |>
@@ -160,15 +173,28 @@ bbox = lake |>
 
 # Interactive map mode: "view"
 tmap::tmap_mode("view")
-tmap::tm_shape(country) + tmap::tm_borders(lwd = 1, col = "green") +
-  tmap::tm_shape(bbox) + tmap::tm_borders(lwd = 2, col = "orange") +
-  tmap::tm_shape(lake) + tmap::tm_borders(lwd = 2, col = "blue") +
+tmap::tm_shape(country) + tmap::tm_borders(lwd=1, col= "green") +
+  tmap::tm_shape(bbox) + tmap::tm_borders(lwd=2, col= "orange") +
+  tmap::tm_shape(lake) + tmap::tm_borders(lwd=2, col= "blue") +
   tmap::tm_basemap("Esri.WorldImagery")
 ```
 
 ##### Figure 1: Interactive map of area of interest polygons (AOI)
 
-## 2. Process DEM
+## 2.2 Download DEM
+
+We acquired elevation data using the `elevatr` package
+[@elevatr] that accesses collections via Amazon Web Services
+Terrain Tiles and Open Topography Global DEM [API](#0) to
+global digital elevation models including SRTMGL3, SRTMGL1,
+AW3D30, and SRTM15Plus. More often than not, `OSM` zooming
+is applied. At lower latitudes, setting `zoom=11` returns a
+data resolution of 3-arc-seconds (76m at 0°Lat), which we
+resample to a standardized 100m grid which also informs use
+of downstream metrics that are applied at scale during
+watershed analysis. To limit dependency conflicts, the Web
+Mercator projection (EPSG:3857) was assigned `crs_master`
+above and applied below going forward.
 
 ```{r watershed-dem}
 #| warning: false
@@ -188,37 +214,74 @@ dem_100m  = stars::st_warp(
   stars::st_as_stars(dem), 
   cellsize=100, crs=sf::st_crs(crs_master)) |>
   terra::rast()
+```
+
+## 2.3 Process DEM
+
+### 2.3.1a `flowdem` Tools
+
+The `flowdem` package [@flowdem] provides a streamlined R
+interface to `RichDEM` library, offering computationally
+efficient implementations of depression breaching, filling,
+and flow routing operations. While the `WhiteboxTools`
+workflow below (Section 2.3) provides more comprehensive
+control over individual processing steps, the `flowdem`
+approach enables rapid exploratory analysis through
+integrated functions that combine multiple operations. This
+"quick and efficient" methodology is particularly valuable
+for initial watershed characterization and iterative
+parameter testing.
+
+We present the `flowdem` workflow as a complementary
+approach demonstrating that multiple algorithmic
+implementations can yield consistent watershed boundaries
+when applied to the same study system. Comparing outputs
+from both `flowdem` and `whitebox` packages also allows for
+validation of challenging data tasks such as endorheic basin
+delineation.
+
+### 2.3.1b Hydraulic Conditioning
+
+`RichDEM`'s depression handling implements priority-flood
+algorithms [@RichDEM; @barnes2014priority] that efficiently
+process large DEMs through optimized queue-based operations.
+The `flowdem::breach()` function carves minimal-depth
+channels through depressions, while `flowdem::fill()` with
+epsilon gradient (`epsilon = TRUE`) ensures continuous
+downstream flow by adding infinitesimal increments to flat
+areas. This combined approach removes topological barriers
+to flow routing while preserving the computational
+efficiency advantages of the RichDEM implementation.
+
+The epsilon filling parameter adds small elevation
+increments (typically 10⁻⁶ to 10⁻⁴ m) to ensure strict
+monotonic descent along flow paths, preventing ambiguous
+flow directions in perfectly flat terrain common to
+marshland environments. This is varies slightly to the
+`WhiteboxTools` `flat_increment` parameter, though both
+achieve similar outcomes through slightly different
+numerical implementations.
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| eval: false
+#| echo: true
+#| comment: NA
 
 # Apply breaching & filling to depressions & flats
 dem_breach = flowdem::breach(dem_100m) 
-dem_fill   = flowdem::fill(dem_breach, epsilon=T)  
-#flowdem::fill_basins() # coastal basins
+dem_fill   = flowdem::fill(dem_breach, epsilon=T) 
 
-# Calculate flow direction & flow accumulation
-dem_dir =  flowdem::dirs(dem_fill, mode="d8")
-dem_acc =  flowdem::dirs(dem_dir, mode="d8")
-
-# Delineate watershed drainage area
-watershed = flowdem::watershed(dem_dir, lake) |>
-  terra::as.polygons(dissolve = TRUE) |>
-  sf::st_as_sf()
-
-# Save elevation models to local directory
-#terra::writeRaster(dem_100m,  "./assets/TIF/dem_chilwa_00_raw.tif",overwrite=T)
-#terra::writeRaster(dem_breach, "./assets/TIF/dem_chilwa_01_breached.tif",overwrite=T)
-#terra::writeRaster(dem_fill, "./assets/TIF/dem_chilwa_02_filled.tif",overwrite=T)
-#terra::writeRaster(dem_dir, "./assets/TIF/dem_chilwa_03_flow_direction.tif",overwrite=T)
-#terra::writeRaster(dem_acc, "./assets/TIF/dem_chilwa_04_flow_accumulation.tif",overwrite=T)
-#sf::st_write(watershed, "./assets/SHP/watershed_chilwa_05_flowdem.shp", delete_dsn=T)
-
-# Visualize effects of hydrographic conditioning
+# Visualize hydraulic conditioning
 dem_breach_diff <- dem_100m - dem_breach
 dem_breach_diff[dem_breach_diff == 0] <- NA
 dem_fill_diff <- dem_100m - dem_fill
 dem_fill_diff[dem_fill_diff == 0] <- NA
 
 tmap::tmap_mode("plot")
-tmap::tm_shape(dem_breach_diff) + tmap::tm_raster(col.scale = tm_scale_continuous(
+tmap::tm_shape(dem_breach_diff) + tmap::tm_raster(col.scale=tm_scale_continuous(
     values = hcl.colors(50, rev = TRUE),midpoint = 0), col.legend = tm_legend(title="")) +
   tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size = .5) +
   tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("RIGHT", "top")) +
@@ -231,182 +294,538 @@ tmap::tm_shape(dem_fill_diff) + tmap::tm_raster(col.scale = tm_scale_continuous(
   tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("RIGHT", "top")) +
   tmap::tm_graticules(lines=T,labels.rot=c(0,90),lwd=0.2) +
   tmap::tm_title("Effects of Filling", size=.8) -> tm_fill
-
 tmap::tmap_arrange(tm_breach, tm_fill, nrow=1)
+
+# Save conditioned DEMs
+terra::writeRaster(dem_breach, overwrite = TRUE,
+  "./assets/TIF/dem_chilwa_01_breached.tif")
+terra::writeRaster(dem_fill, overwrite = TRUE,
+  "./assets/TIF/dem_chilwa_02_filled.tif")
 ```
+
+![](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/_site/watershed-map_files/figure-html/watershed-dem-1.png){fig-align="center"}
+
+### 2.3.1c Flow Accumulation
+
+Flow routing follows the D8 algorithm [@o1984extraction]
+implemented through RichDEM's optimized structures. The
+`flowdem::dirs()` function calculates flow direction
+pointers, which are then used as input to compute flow
+accumulation. This follows familiar two-step process of
+other workflows, but executes using a more memory-efficient
+function often useful when importing large raster and point
+cloud datasets.
+
+The Flow accumulation values represent the number of
+upstream cells contributing flow to each location, identical
+in interpretation to WhiteboxTools outputs. At 100m
+resolution, each cell represents 0.01 km² (1 hectare) of
+contributing area, enabling direct conversion between cell
+counts and drainage area in km².
+
+```{r}
+#|warning: false
+#|message: false 
+#|error: false 
+#|eval: false 
+#|echo: true 
+#|comment: NA
+# Inputs
+dem_breach = terra::rast("./assets/TIF/dem_chilwa_01_breached.tif")
+dem_fill = terra::rast("./assets/TIF/dem_chilwa_02_filled.tif")
+
+# D8 flow direction + accumulation from filled DEM
+dem_dir <- flowdem::dirs(dem_fill, mode = "d8") 
+dem_acc <- flowdem::accum(dem_dir, mode = "d8")
+
+# Verify flow accumulation statistics
+cat("Flow accumulation summary (flowdem):\n")
+cat("Minimum:", min(values(dem_acc), na.rm = TRUE),"cells\n") 
+cat("Median:", median(values(dem_acc), na.rm =TRUE), "cells\n") 
+cat("Maximum:", max(values(dem_acc), na.rm= TRUE), "cells\n") 
+cat("Max contributing area:", round(max(values(
+  dem_acc), na.rm = TRUE) * 0.01, 1), "km²\n")
+
+terra::writeRaster(dem_dir, overwrite=T,
+  "./assets/TIF/dem_chilwa_03_flow_direction.tif")
+terra::writeRaster(dem_acc, overwrite=T, 
+  "./assets/TIF/dem_chilwa_04_flow_accumulation.tif")
+
+# Visual check
+tmap::tmap_mode("view")
+tmap::tm_shape(dem_acc) + tmap::tm_raster(
+  values="OrRd", title = "D8 Flow Accumulation",
+  breaks = c(1, 2, 3, 5, 10, 50, 100, 1000, 1200000),
+  labels = c("1-2", "2-3", "3-5", "5-10", "10-50", "50-100", "100-1K", ">1K")) +
+  tmap::tm_shape(lake) + tmap::tm_borders(col = "turquoise", lwd = 2) +
+  tmap::tm_layout(legend.text.size = 0.8, legend.title.size = 1)
+```
+
+### 2.3.1d Watershed Delineation
+
+The `flowdem::watershed()` function identifies all cells
+that drain to a specified feature, in this case, the Lake
+Chilwa boundary polygon. This approach differs from
+pour-point-based methods by using the entire lake perimeter
+as the drainage terminus, automatically capturing all flow
+paths converging on the water body. For endorheic systems
+where the terminal sink is spatially extensive (Lake Chilwa
+spans \~60 km N-S), this polygon-based approach may be more
+robust than single-point methods, as it captures multiple
+convergent flow paths around the lake's perimeter.
+
+The resulting watershed polygon represents the complete
+catchment area draining to Lake Chilwa through surface flow
+pathways identified by the D8 algorithm. Post-processing
+converts the raster watershed output to vector format for
+integration with other spatial datasets and area
+calculations.
 
 ```{r watershed-dem-hidden}
 #| warning: false
 #| message: false
 #| error: false
-#| echo: false
+#| echo: true
 #| eval: true
 #| comment: NA
-# Import outputs derived in chunk above
-dem_100m   = terra::rast("./assets/TIF/dem_chilwa_00_raw.tif")
-dem_breach = terra::rast("./assets/TIF/dem_chilwa_01_breached.tif")
-dem_fill   = terra::rast("./assets/TIF/dem_chilwa_02_filled.tif")
+# Inputs
+dem_dir = terra::rast("./assets/TIF/dem_chilwa_03_flow_direction.tif")
+dem_acc = terra::rast("./assets/TIF/dem_chilwa_04_flow_accumulation.tif")
+
+# Delineate extent of watershed drainage area
+watershed = flowdem::watershed(dem_dir, lake) |>
+  terra::as.polygons() |>
+  sf::st_as_sf()
+
+# Visual check
+tmap::tmap_mode("view")
+tmap::tm_shape(dem_acc) + tmap::tm_raster(
+  values="OrRd", title = "D8 Flow Accumulation",
+  breaks = c(1, 2, 3, 5, 10, 50, 100, 1000, 1200000),
+  labels = c("1-2", "2-3", "3-5", "5-10", "10-50", "50-100", "100-1K", ">1K")) +
+  tmap::tm_shape(watershed) + tmap::tm_borders(col = "royalblue", lwd = 2) +
+  tmap::tm_shape(lake) + tmap::tm_borders(col = "turquoise", lwd = 2) +
+  tmap::tm_layout(legend.text.size = 0.8, legend.title.size = 1)
+
+# Outputs
+sf::st_write(watershed, "./assets/SHP/watershed_chilwa_05_flowdem.shp", delete_dsn=T)
 ```
 
-![Figure 2: Static maps showing effects of hydraulic
-conditioning essential to digital elevation
-models](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/_site/watershed-map_files/figure-html/watershed-dem-1.png){fig-align="center"}
+### 2.3.2a `whitebox` Tools
+
+Lake Chilwa represents a critical challenge for standard
+watershed delineation as an endorheic, closed basin where
+water accumulates through surface inflow and evaporation
+without surface outflow. Traditional hydrological algorithms
+[@o1984extraction] assume exorheic drainage systems with
+defined pour points where water exits the catchment. For
+endorheic systems, we adapted this workflow principally by
+first estimating terminal sink points near to maximum flow
+values within the lake basin to compute drainages of
+internal sub-basins and delineating the watershed outwards.
+Implementation steps were as follows:
+
+1.  Hydraulic breaching and filling
+2.  D8 Flow direction and accumulation
+3.  Depression network characterization,
+4.  Derive terminal drainage points,
+5.  Delineate watershed,
+6.  Stream network classification.
+
+### 2.3.2b Hydraulic Conditioning
+
+Digital elevation models contain spurious depressions and
+flat areas arising from data acquisition artifacts,
+interpolation errors, and measurement precision limitations
+[@lindsay2016efficient]. Artifacts disrupt continuous flow
+path connectivity essential for watershed delineation.
+Hydraulic conditioning removes these features while
+preserving genuine topographic depressions such as Lake
+Chilwa's endorheic basin.
+
+We applied depression breaching [@lindsay2016efficient]
+fitted with minimal-cost pathways and depression gradients
+(\<3m depth) while preserving the primary lake basin. This
+approach removes DEM artifacts more conservatively without
+artificially draining the local system.
+
+We applied depression filling using the Wang & Liu algorithm
+[@wang2006efficient] to smooth remaining flat areas through
+scan-line method specifically suited to low-relief terrain.
+The combined breach-then-fill strategy balances
+computational efficiency with preservation of hydrologically
+meaningful features
 
 ```{r}
+#| warning: false
+#| message: false
+#| error: false
 #| eval: false
+#| echo: true
+#| comment: NA
+# 1a. Conservative breaching of shallow depressions (<3m) 
+# while preserving the primary Lake Chilwa basin
 whitebox::wbt_breach_depressions(
-  dem   = "dem_chilwa_00_raw.tif",
-  output= "dem_chilwa_11_breached.tif",
-  wd    = "./assets/TIF/",
-  max_depth = 50,  # Only breach small features, not the lake
+  dem     = "dem_chilwa_00_raw.tif",
+  output  = "dem_chilwa_11_breached_flat.tif",
+  wd      = "./assets/TIF/",
+  max_depth = 3,  # Only breach shallow artifacts
   flat_increment = 0.001
-  )
+)
 
-whitebox::wbt_fill_depressions(
-  dem    = "dem_chilwa_11_breached.tif",
-  output = "dem_chilwa_12_filled.tif",
-  wd     = "./assets/TIF/",
-  fix_flats = T,
-  flat_increment = 0.001,
-  max_depth = 10  # This preserves larger depressions such as lake
-  )
+# 1b. Depression filling using Wang & Liu (2006) algorithm
+# Optimized for flat terrain typical of marshlands
+whitebox::wbt_fill_depressions_wang_and_liu(
+  dem   = "dem_chilwa_11_breached_flat.tif",
+  output= "dem_chilwa_12_filled_wang.tif",
+  wd    = "./assets/TIF/"
+)
 
+# 1c. Quantify conditioning effects
+dem_breach = terra::rast("./assets/TIF/dem_chilwa_11_breached_flat.tif")
+dem_filled = terra::rast("./assets/TIF/dem_chilwa_12_filled_wang.tif")
+
+depression_effect <- dem_filled - dem_breach
+breach_effect = dem_100m - dem_breach  
+fill_effect   = dem_filled - dem_breach
+total_effect  = dem_filled - dem_100m  
+
+breach_effect[breach_effect == 0] <- NA
+fill_effect[fill_effect == 0] <- NA
+total_effect[total_effect == 0] <- NA
+total_log <- log10(total_effect + 0.01)  # +0.01 to handle small values
+
+# Visualize hydraulic conditioning
+tmap::tmap_mode("plot")
+tmap::tm_shape(breach_effect) + tmap::tm_raster(col.scale = tm_scale_continuous(
+    values = hcl.colors(50, rev = T),midpoint=0),col.legend=tm_legend(title="")) +
+  tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size = .5) +
+  tmap::tm_compass(color.dark="gray60",position=c("RIGHT", "top")) +
+  tmap::tm_graticules(lines=T,labels.rot=c(0,90),lwd=0.2) +
+  tmap::tm_title("Effects of Breaching", size=.8) -> tm_breach
+
+tmap::tm_shape(fill_effect) + tmap::tm_raster(col.scale = tm_scale_continuous(
+    values = hcl.colors(50, rev = T),midpoint=0),col.legend=tm_legend(title="")) +
+  tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size = .5) +
+  tmap::tm_compass(color.dark="gray60",position=c("RIGHT", "top")) +
+  tmap::tm_graticules(lines=T,labels.rot=c(0,90),lwd=0.2) +
+  tmap::tm_title("Effects of Filling", size=.8) -> tm_fill
+tmap::tmap_arrange(tm_breach, tm_fill, nrow=1)
+
+tmap::tmap_mode("view")
+tmap::tm_shape(breach_effect) + tmap::tm_raster(
+    palette = "Blues", title = "Depth (m)", style = "cont") +
+  tmap::tm_shape(fill_effect) + tmap::tm_raster(
+    values = "Oranges", title = "Depth (m)", style = "cont") +
+  tmap::tm_shape(total_effect) + tmap::tm_raster(
+    values = "YlOrRd", title = "Depth (m)", style = "cont") +
+  tmap::tm_shape(lake) + tmap::tm_borders(col = "red", lwd = 1.5) +
+  tmap::tm_layout(main.title = "Effects of Breaching")
+
+# Save for later
+terra::writeRaster(depression_effect, overwrite=T,
+  "./assets/TIF/dem_chilwa_13_depression_effects.tif")
+terra::writeRaster(breach_effect, overwrite = T, 
+  "./assets/TIF/dem_chilwa_11_breach_effect.tif")
+terra::writeRaster(fill_effect, overwrite = T,
+  "./assets/TIF/dem_chilwa_12_fill_effect.tif")
+terra::writeRaster(total_effect, overwrite = T,
+  "./assets/TIF/dem_chilwa_13_total_effect.tif")
+```
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| eval: true
+#| echo: false
+#| comment: NA
+
+dem_breach = terra::rast("./assets/TIF/dem_chilwa_11_breached_flat.tif")
+dem_filled = terra::rast("./assets/TIF/dem_chilwa_12_filled_wang.tif")
+
+breach_effect = terra::rast("./assets/TIF/dem_chilwa_11_breach_effect.tif")
+fill_effect   = terra::rast("./assets/TIF/dem_chilwa_12_fill_effect.tif")
+total_effect  = terra::rast("./assets/TIF/dem_chilwa_13_total_effect.tif")
+ 
+tmap::tmap_mode("plot")
+tmap::tm_shape(breach_effect) + tmap::tm_raster(col.scale = tm_scale_continuous(
+    values = hcl.colors(50, rev = TRUE),midpoint=0),col.legend=tm_legend(title="")) +  tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size = .5) +
+  tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("RIGHT", "top")) +
+  tmap::tm_graticules(lines=T,labels.rot=c(0,90),lwd=0.2) +
+  tmap::tm_title("Effects of Breaching", size=.8) -> tm_breach
+
+tmap::tm_shape(fill_effect) + tmap::tm_raster(col.scale = tm_scale_continuous(
+    values = hcl.colors(50, rev = TRUE),midpoint=0),col.legend=tm_legend(title="")) +  tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size = .5) +
+  tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("RIGHT", "top")) +
+  tmap::tm_graticules(lines=T,labels.rot=c(0,90),lwd=0.2) +
+  tmap::tm_title("Effects of Filling", size=.8) -> tm_fill
+tmap::tmap_arrange(tm_breach, tm_fill, nrow=1)
+
+tmap::tmap_mode("view")
+tmap::tm_shape(breach_effect) + tmap::tm_raster(
+    palette = "Blues", title = "Depth (m)", style = "cont") +
+  tmap::tm_shape(fill_effect) + tmap::tm_raster(
+    values = "Oranges", title = "Depth (m)", style = "cont") +
+  tmap::tm_shape(total_effect) + tmap::tm_raster(
+    values = "YlOrRd", title = "Depth (m)", style = "cont") +
+  tmap::tm_shape(lake) + tmap::tm_borders(col = "red", lwd = 1.5) +
+  tmap::tm_layout(main.title = "Effects of Breaching & Filling")
+```
+
+### 2.3.2c Flow Accumulation
+
+Flow accumulation was computed using the D8
+single-flow-direction algorithm [@o1984extraction] via the
+`whitebox` function `wbt_d8_flow_accumulation()`
+[@whitebox-2; @lindsay2016whitebox]. The algorithm routes
+flow from each cell to its steepest downslope neighbor among
+eight adjacent cells. Flow accumulation values represent the
+number of upstream cells contributing flow to each location.
+At 100m spatial resolution, 1 cell = 0.01 km² contributing
+area.
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| eval: false
+#| echo: true
+#| comment: NA
+# 2a. Calculate D8 flow direction
 whitebox::wbt_d8_pointer(
-  dem   = "dem_chilwa_12_filled.tif",
-  output= "dem_chilwa_13_flow_direction.tif",
-  wd    = "./assets/TIF/"
-  )
+  dem = "dem_chilwa_12_filled_wang.tif",
+  output = "dem_chilwa_13_flow_direction_D8.tif",
+  wd = "./assets/TIF/"
+)
 
+# 2b. Calculate flow accumulation
+# Output units: number of upstream cells contributing flow
+# At 100m resolution: 1 cell = 0.01 km² contributing area
 whitebox::wbt_d8_flow_accumulation(
-  input = "dem_chilwa_13_flow_direction.tif", pntr = T,
-  output= "dem_chilwa_14_flow_accumulation.tif",
-  wd    = "./assets/TIF/"
+  input = "dem_chilwa_13_flow_direction_D8.tif", 
+  output= "dem_chilwa_14_flow_accumulation_D8.tif",
+  wd    = "./assets/TIF/",
+  pntr  = T
   )
+```
 
-whitebox::wbt_extract_streams(
-  flow_accum= "dem_chilwa_14_flow_accumulation.tif", # accumulation input
-  threshold = 100, # should align with 1km2 resolution applied upstream
-  output    = "dem_chilwa_15_streams_gridded.tif",
-  wd        = "./assets/TIF/", 
-  zero_background = T 
-  )
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| eval: true
+#| echo: true
+#| comment: NA
+# Visual check
+dem_acc = terra::rast("./assets/TIF/dem_chilwa_14_flow_accumulation.tif")
 
-whitebox::wbt_remove_short_streams(
-  d8_pntr   = "dem_chilwa_13_flow_direction.tif",  # flow direction
-  streams   = "dem_chilwa_15_streams_gridded.tif",
-  output    = "dem_chilwa_16_streams_d8.tif",
-  min_length= 200,
-  wd        = "./assets/TIF/"
-  )
+tmap::tmap_mode("view")
+tmap::tm_shape(dem_acc) + tmap::tm_raster(
+  values="OrRd", title = "D8 Flow Accumulation",
+  breaks = c(1, 2, 3, 5, 10, 50, 100, 1000, 1200000),
+  labels = c("1-2", "2-3", "3-5", "5-10", "10-50", "50-100", "100-1K", ">1K")) +
+  tmap::tm_shape(lake) + tmap::tm_borders(col = "turquoise", lwd = 2) +
+  tmap::tm_layout(legend.text.size = 0.8, legend.title.size = 1)
+```
 
-# ----------- Drainage Terminus -------------- #
-# Create multiple pour points around Lake Chilwa
-# (northern edge, southern edge, eastern edge, western edge)
-# Usually, all we need to do is select a terminal flow point 
-# in areas of lowest elevation and highest flow accumulation.
+### 2.3.2d Depression Network
 
-# Whitebox tools expect exorheic watersheds as inputs, as most 
-# hydrology algorithms compute drainage areas from downstream 
-# flow points where water is seen exiting the drainage basin. 
-# However, Lake Chilwa is an endorheic lake with zero exit.
+Endorheic basins are characterized by internal drainage
+networks where water accumulates in topographic depressions
+without surface outflow. We quantified two complementary
+metrics to characterize Lake Chilwa's depression structure:
 
-# We list three solutions below, but caution that these methods 
-# and endorheic drainages in general call for additional testing,
-# case-by-case analysis. Simplest solution is augment the flow sample
-# with additional terminus locations marking wider extent of lowest 
-# drainage area. A slightly more rigorous yet efficient alternative 
-# is possible by delineating all sub-basins within and mapping outwards.
-# The third, methodologically sound option is provided using a hydraulic 
-# algorithm that is tailored specifically for endorheic depressions.
+1.  depth in sink, measuring the vertically from cell to
+    spillover point,
+2.  topographic wetness index (TWI), indicating locations
+    prone to water accumulation based on upslope
+    contributing area and local slope.
 
-# Derive point shapefile(s) of terminal point near high flow accumulation
-outlets = editMap(mapview(dem_acc)) 
+Depth in sink analysis was performed on the raw
+(unconditioned) DEM to preserve actual depression depths,
+while TWI calculation used the hydrologically conditioned
+DEM and flow accumulation to ensure topologically consistent
+flow routing. These metrics jointly identify the spatial
+extent and hydrological characteristics of the endorheic
+system.
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| eval: true
+#| echo: true
+#| comment: NA
+# 3a. Calculate depth within depressions using raw 
+# or unbreached DEM to measure depth below spillover points
+whitebox::wbt_depth_in_sink(
+  dem = "dem_chilwa_00_raw.tif",
+  output = "dem_chilwa_15_sink_depth.tif", 
+  wd = "./assets/TIF/",
+  zero_background = F
+)
+
+# 3b. Calculate topographic wetness index to support
+# delineation of marshland in marginal zones
+whitebox::wbt_wetness_index(
+  sca = "dem_chilwa_14_flow_accumulation_D8.tif",
+  slope = "dem_chilwa_12_filled_wang.tif",  
+  output = "dem_chilwa_16_wetness_index.tif",
+  wd = "./assets/TIF/"
+)
+
+sink_depth <- terra::rast("./assets/TIF/dem_chilwa_15_sink_depth.tif")
+wetness_idx <- terra::rast("./assets/TIF/dem_chilwa_16_wetness_index.tif")
+flow_accum <- terra::rast("./assets/TIF/dem_chilwa_14_flow_accumulation_D8.tif")
+
+tmap::tmap_mode("view")
+tmap::tm_shape(sink_depth) + tmap::tm_raster(values = "Blues", 
+  alpha=0.7, title = "Sink Depth (m)", style = "quantile", n=7) +
+  tmap::tm_shape(wetness_idx) + tmap::tm_raster(values="YlGnBu", 
+  alpha=0.5, title="Wetness Index", style = "quantile", n=7) +
+  tmap::tm_shape(lake) + tmap::tm_borders(col = "turquoise", lwd = 2) +
+  tmap::tm_layout(legend.text.size = 0.8, legend.title.size = 1) +
+  tmap::tm_basemap("Esri.WorldImagery")
+
+par(mfrow = c(1, 2))
+hist(sink_depth[sink_depth <= 25], breaks = 30,
+     main = "Depths 0-10m", xlab = "Depth (m)", col = "steelblue")
+hist(values(wetness_idx), breaks = 50, xlab = "TWI Value", 
+     main = "Distribution of Wetness Index", col = "darkgreen")
+```
+
+### 2.3.2e Terminal Pour Points
+
+Standard watershed delineation algorithms require pour
+points (outlet locations) where accumulated flow exits the
+drainage system. For endorheic basins lacking surface
+outflow, we identified terminal drainage points at locations
+of maximum flow accumulation within the lake basin,
+representing the ultimate destination of all surface
+drainage [@lehner2022global; @zhang2020national]
+[@li2025enhanced].
+
+Terminal points were identified through interactive
+digitization using flow accumulation as reference. We tested
+both single-point and multi-point configurations to assess
+sensitivity of watershed delineation to pour point placement
+in flat terrain. Points were placed at the lake center where
+flow accumulation exceeds 1 million cells, confirming
+successful convergence of watershed-scale drainage .
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| eval: false
+#| echo: true
+#| comment: NA
+
+# Assign terminal sink points near high flow accumulation
+outlets = mapedit::editMap(mapview::mapView(dem_acc)) 
 outlets = outlets$all |> # convert to sf
   sf::st_transform(crs_master) |>
   dplyr::select(geometry)
-outlets$id <- "chilwa_drainage_terminus"
+outlets$id <- "chilwa_drainage_terminus_single"
 
-# Create multiple terminal flow points to improve delineation
-outlets_add = editMap(mapview(dem_acc)) 
+# Add terminal sink points to improve watershed delineation
+outlets_add = mapedit::editMap(mapview::mapView(dem_acc)) 
 outlets_add = outlets_add$all |> # convert to sf
   sf::st_transform(crs_master) |>
   dplyr::select(geometry)
 outlets_add$id <- "chilwa_drainage_terminus_multiple"
 
-# Save terminal flow points for reproducibility
+# Visualize & save points for reproducibility
 sf::st_write(outlets, "./assets/SHP/outlets.shp", delete_layer=T, quiet=T)
 sf::st_write(outlets_add, "./assets/SHP/outlets_multiple.shp", delete_layer=T)
+dem_acc   = terra::rast("./assets/TIF/dem_chilwa_14_flow_accumulation.tif")
+tmap::tm_shape(dem_acc) + tmap::tm_raster(values="brewer.reds") +
+  tmap::tm_shape(lake) + tmap::tm_borders(col="lightblue") +
+  tmap::tm_shape(outlets) + tmap::tm_symbols(shape="id",lwd=2)
+```
 
-# Delineate watershed from flow terminus and flow direction 
-whitebox::wbt_watershed(
-  d8_pntr = "dem_chilwa_13_flow_direction.tif",
-  pour_pts = "./assets/SHP/outlets_multiple.shp",
-  output = "dem_chilwa_17_watershed.tif",
-  wd = "./assets/TIF/"
-)
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| eval: true
+#| echo: false
+#| comment: NA
 
-# Delineate regional watersheds and extract endorheic sub-basin manually
-whitebox::wbt_basins(
-  d8_pntr = "dem_chilwa_13_flow_direction.tif",
-  output = "dem_chilwa_18_basins.tif",
-  wd = "./assets/TIF/"
-)
-
-# Recmmended algorithm for endorheic drainages
-whitebox::wbt_stochastic_depression_analysis(
-  dem = "dem_chilwa_00_raw.tif",
-  output = "dem_chilwa_19_depressions.tif",
-  rmse = 5.0,  # Root mean square error in elevation units
-  range = 100,  # Range parameter
-  iterations = 100,
-  wd = "./assets/TIF/"
-)
-
-
-
-# Visual check
-tmap::tmap_mode("view")
-tmap::tm_shape(dem_acc) + tmap::tm_raster() +
-  tmap::tm_shape(outlets_sf) + tmap::tm_symbols(shape="id",lwd=2)
-
-tmap::tm_shape(dem_filled) + tmap::tm_raster() + 
-  tmap::tm_shape(outlets_sf) + tmap::tm_symbols(shape="id",lwd=2)
- 
-# Create binary mask; Values > 0 represent the endorheic basin
-depressions = terra::rast("./assets/TIF/dem_chilwa_19_depressions.tif")
-
-# Due to its shallow depths, we need to derive suitable thresholds 
-depth_threshold <- 10  # meters 
-depression_major <- depressions > depth_threshold
-depression_polygons <- as.polygons(depressions_major, dissolve = FALSE) |> 
-  st_as_sf()
-plot(depressions_polyons)
-
-# Calculate area of watershed depression polygon
-depression_polygons$area_km2 <- as.numeric(st_area(depression_polygons)) / 1e6
-
-# Keep only the LARGEST depression (Lake Chilwa)
-chilwa_basin <- depression_polygons[which.max(depression_polygons$area_km2), ]
-
-# Visualize
-plot(st_geometry(chilwa_basin), 
-     main = "Lake Chilwa Main Depression",
-     col = "lightblue",
-     border = "red",
-     lwd = 2)
-
-print(paste("Basin area:", round(chilwa_basin$area_km2, 1), "km²"))
-
-drainage  = stars::read_stars("./assets/TIF/dem_chilwa_17_watershed.tif")
-watershed = stars::st_contour(drainage, breaks = 1) |> 
-  sf::st_geometry() |> 
-  sf::st_cast("POLYGON")
-
-watershed_bdry <- watershed[which.max(st_area(watershed))]
+# Visualize terminal flow points
+outlets = sf::st_read("./assets/SHP/outlets_multiple.shp", quiet=T)
+dem_acc = terra::rast("./assets/TIF/dem_chilwa_14_flow_accumulation.tif")
+tmap::tm_shape(dem_acc) + tmap::tm_raster(
+  values="OrRd", title = "D8 Flow Accumulation",
+  breaks = c(1, 2, 3, 5, 10, 50, 100, 1000, 1200000),
+  labels = c("1-2", "2-3", "3-5", "5-10", "10-50", "50-100", "100-1K", ">1K")) +
+  tmap::tm_shape(outlets) + tmap::tm_symbols(shape="id",lwd=2) +
+  tmap::tm_shape(lake) + tmap::tm_borders(col = "turquoise", lwd = 2) +
+  tmap::tm_layout(legend.text.size = 0.8, legend.title.size = 1)
 
 ```
 
-##### Figure 2: Interactive maps of hydrographically conditioned and unconditioned digital elevation models.
+### 2.3.2f Streams Delineation
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| eval: false
+#| echo: true
+#| comment: NA
+
+# Stream Classification 
+whitebox::wbt_extract_streams(
+  flow_accum= "dem_chilwa_14_flow_accumulation_D8.tif", 
+  output    = "dem_chilwa_18_streams_sensitive.tif",
+  wd        = "./assets/TIF/", 
+  zero_background = T,
+  threshold = 25, 
+  )
+
+whitebox::wbt_remove_short_streams(
+  d8_pntr   = "dem_chilwa_14_flow_direction_D8.tif",  # flow direction
+  streams   = "dem_chilwa_18_streams_sensitive.tif",
+  output    = "dem_chilwa_19_streams_d8.tif",
+  wd        = "./assets/TIF/",
+  min_length= 200,
+  )
+
+whitebox::wbt_find_main_stem(
+  d8_pntr = "dem_chilwa_14_flow_direction_D8.tif",
+  streams = "dem_chilwa_19_streams_d8.tif",
+  output = "dem_chilwa_20_streams_trunk.tif",
+  wd = "./assets/TIF/"
+)
+
+whitebox::wbt_raster_streams_to_vector(
+  streams = "dem_chilwa_20_streams_trunk.tif",
+  d8_pntr = "dem_chilwa_14_flow_direction_D8.tif",
+  output = "./assets/SHP/streams_chilwa.shp",
+  wd = "./assets/TIF/"
+)
+```
+
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| eval: true
+#| echo: true
+#| comment: NA
+# Inputs
+streams_sf = sf::st_read("./assets/SHP/streams_chilwa.shp")
+dem_filled = terra::rast("./assets/TIF/dem_chilwa_12_filled_wang.tif")
+sf::st_crs(streams_sf) = 3857
+
+# Visualize
+tmap::tm_shape(dem_filled) + tmap::tm_raster(palette = "Greens") +
+  tmap::tm_shape(lake) + tmap::tm_borders(col = "turquoise", lwd = 2) +
+  tmap::tm_shape(streams_sf) + tmap::tm_lines(col = "steelblue") +
+  tmap::tm_layout(legend.text.size = 0.8, legend.title.size = 1)
+```
 
 ```{r}
 #| warning: false
@@ -511,11 +930,6 @@ watershed_site = sf::st_read("./assets/inputs/watershed_site.shp", quiet=T) |> s
 #  tmap::tm_shape(watershed_site) + tm_borders(col = "red", lwd=1)
 ##### Figure 2: Interactive map showing extracted hydrographic layers
 ```
-
-## 2. Process DEM
-
-**Note:** More efficient conditioning algorithms available
-with `RichDEM` library \[\^1\]
 
 ```{r}
 #| comment: NA
@@ -652,6 +1066,10 @@ rayshader::render_highquality(
 
 ![Figure 4: Three-dimensional map of Lake Chilwa
 watershed](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/06-watershed-3D.png)
+
+#### References
+
+#### Runtime Log
 
 ```{r session-info}
 #| eval: true
