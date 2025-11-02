@@ -7,6 +7,7 @@ format:
     toc: true
     toc-location: right
     toc-expand: 2
+    toc-depth: 4
     toc-title: "**On this page**"
     highlight-style: pygments
     number-sections: false
@@ -200,7 +201,6 @@ site_map = tmap::tm_shape(basemap_150k) + tmap::tm_rgb() +
 tmap::tmap_save(site_map, width=15120, height=15120, asp=0, dpi=600,
   "/Users/seamus/Repos/map-templates/assets/outputs/01-site-draft.png"
   )
-
 site_map
 ```
 

@@ -360,6 +360,17 @@ plot(depressions_max)
 
 
 
+tmap::tmap_mode("view")
+tmap::tm_shape(dem_filled) + tmap::tm_raster(values = "brewer.greens") +
+  tmap::tm_shape(chilwa_basin) + tmap::tm_borders(lwd=2, col="blue") +
+  tmap::tm_shape(lake) + tmap::tm_polygon(lwd = 0.7, col = "steelblue") +
+  tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size = .5) +
+  tmap::tm_compass(color.dark="gray60",position=c("RIGHT", "top")) +
+  tmap::tm_graticules(lines=T,labels.rot=c(0,90),lwd=0.2) +
+  tmap::tm_title("Endorheic Watershed Delineation", size=.8) +
+  tmap::tm_basemap("Esri.WorldImagery")
+
+
 
 
 

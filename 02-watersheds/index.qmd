@@ -6,8 +6,8 @@ format:
   html:
     toc: true
     toc-location: right
+    toc-expand: false
     toc-depth: 4
-    toc-expand: 2
     toc-title: "**On this page**"
     number-sections: false
     highlight-style: pygments
@@ -175,7 +175,7 @@ tmap::tm_shape(country) + tmap::tm_borders(lwd=1, col= "green") +
 Figure 2a: Interactive map illustrating layout of area of
 interest polygons (AOI)
 
-2.2 Download DEM
+## 2.2 Download DEM
 
 We acquired elevation data using the `elevatr` package
 [@elevatr] that accesses via Amazon Web Services Terrain
@@ -216,7 +216,7 @@ terra::writeRaster(dem_100m, overwrite = TRUE,
   "../assets/TIF/dem_chilwa_00_raw.tif")
 ```
 
-## 2.3 Workflow in `flowdem`
+## 2.3 Flowdem Tools
 
 The `flowdem` package [@flowdem] provides a streamlined R
 interface to `RichDEM` library, offering computationally
@@ -264,7 +264,7 @@ numerical implementations.
 #| warning: false
 #| message: false
 #| error: false
-#| eval: true
+#| eval: false
 #| echo: true
 #| comment: NA
 # Inputs
@@ -303,6 +303,10 @@ terra::writeRaster(dem_fill, overwrite = TRUE,
   "../assets/TIF/dem_chilwa_02_filled.tif")
 ```
 
+![Figure 2b: Map illustrating effects of breaching and
+filling on elevation
+model.](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/MAP/breach-effects.png){fig-align="center"}
+
 ### Flow Accumulation
 
 Flow routing follows the D8 algorithm [@o1984extraction]
@@ -316,14 +320,14 @@ cloud datasets.
 
 The Flow accumulation values represent the number of
 upstream cells contributing flow to each location, identical
-in interpretation to WhiteboxTools outputs. At 100m
+in interpretation to `WhiteboxTools` outputs. At 100m
 resolution, each cell represents 0.01 km² (1 hectare) of
 contributing area, enabling direct conversion between cell
 counts and drainage area in km².
 
 ```{r}
 #|warning: false
-#|message: false 
+#|message: true 
 #|error: false 
 #|eval: false 
 #|echo: true 
@@ -341,23 +345,28 @@ cat("Flow accumulation summary (flowdem):\n")
 cat("Minimum:", min(values(dem_acc), na.rm = TRUE),"cells\n") 
 cat("Median:", median(values(dem_acc), na.rm =TRUE), "cells\n") 
 cat("Maximum:", max(values(dem_acc), na.rm= TRUE), "cells\n") 
-cat("Max contributing area:", round(max(values(
-  dem_acc), na.rm = TRUE) * 0.01, 1), "km²\n")
+cat("Max contributing area:", round(max(values(dem_acc), na.rm=T) * 0.01, 1), "km²\n")
+streams = dem_acc >= 1000 |> as.lines(streams)
+streams[streams == 0] <- NA  # Remove non-stream cells
 
-terra::writeRaster(dem_dir, overwrite=T,
-  "../assets/TIF/dem_chilwa_03_flow_direction.tif")
-terra::writeRaster(dem_acc, overwrite=T, 
-  "../assets/TIF/dem_chilwa_04_flow_accumulation.tif")
-
-# Visual check
+# Visualise
 tmap::tmap_mode("view")
-tmap::tm_shape(dem_acc) + tmap::tm_raster(
-  values="OrRd", title = "D8 Flow Accumulation",
+tmap::tm_shape(lake) + tmap::tm_raster(
+  values="OrRd", title = "D8 Flow Acc.",
   breaks = c(1, 2, 3, 5, 10, 50, 100, 1000, 1200000),
   labels = c("1-2", "2-3", "3-5", "5-10", "10-50", "50-100", "100-1K", ">1K")) +
   tmap::tm_shape(lake) + tmap::tm_borders(col = "turquoise", lwd = 2) +
   tmap::tm_layout(legend.text.size = 0.8, legend.title.size = 1)
+
+# Outputs
+terra::writeRaster(dem_dir, overwrite=T,
+  "../assets/TIF/dem_chilwa_03_flow_direction.tif")
+terra::writeRaster(dem_acc, overwrite=T, 
+  "../assets/TIF/dem_chilwa_04_flow_accumulation.tif")
 ```
+
+Figure 2c: Interactive map illustrating flow accumulation
+results
 
 ## 2.4 Watershed Delineation
 
@@ -384,7 +393,7 @@ calculations.
 #| message: false
 #| error: false
 #| echo: true
-#| eval: true
+#| eval: false
 #| comment: NA
 # Inputs
 dem_dir = terra::rast("../assets/TIF/dem_chilwa_03_flow_direction.tif")
@@ -396,20 +405,20 @@ watershed = flowdem::watershed(dem_dir, lake) |>
   sf::st_as_sf()
 
 # Visual check
-tmap::tmap_mode("view")
-tmap::tm_shape(dem_acc) + tmap::tm_raster(
-  values="OrRd", title = "D8 Flow Accumulation",
-  breaks = c(1, 2, 3, 5, 10, 50, 100, 1000, 1200000),
-  labels = c("1-2", "2-3", "3-5", "5-10", "10-50", "50-100", "100-1K", ">1K")) +
-  tmap::tm_shape(watershed) + tmap::tm_borders(col = "royalblue", lwd = 2) +
-  tmap::tm_shape(lake) + tmap::tm_borders(col = "turquoise", lwd = 2) +
-  tmap::tm_layout(legend.text.size = 0.8, legend.title.size = 1)
+tmap::tmap_mode("plot")
+tmap::tm_shape(watershed) + tmap::tm_borders(col = "turquoise", lwd = 2) +
+  tmap::tm_shape(streams) + tmap::tm_lines(col = "royalblue", lwd = 1) +
+  tmap::tm_shape(lake) + tmap::tm_polygons(fill = "royalblue") +
+  tmap::tm_layout(legend.text.size = 0.8, legend.title.size = 1) +
+  tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size = .5) +
+  tmap::tm_compass(color.dark="gray60",position=c("RIGHT", "top")) +
+  tmap::tm_graticules(lines=T,labels.rot=c(0,90),lwd=0.2)
 
 # Outputs
 sf::st_write(watershed, "../assets/SHP/watershed_chilwa_05_flowdem.shp", delete_dsn=T)
 ```
 
-## 2.5 Workflow in `whitebox`
+## 2.5 Whitebox Tools
 
 Lake Chilwa represents a critical challenge for standard
 watershed delineation as an endorheic, closed basin where
@@ -423,8 +432,8 @@ values within the lake basin to compute drainages of
 internal sub-basins and delineating the watershed outwards.
 Implementation steps were as follows:
 
--   Hydraulic breaching and filling
--   D8 Flow direction and accumulation
+-   Hydraulic breaching and filling,
+-   D8 Flow direction and accumulation,
 -   Depression network characterization,
 -   Derive terminal drainage points,
 -   Delineate watershed and streams.
