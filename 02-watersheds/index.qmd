@@ -6,7 +6,6 @@ format:
   html:
     toc: true
     toc-location: right
-    toc-expand: false
     toc-depth: 4
     toc-title: "**On this page**"
     number-sections: false
@@ -182,8 +181,8 @@ We acquired elevation data using the `elevatr` package
 Tiles and the Open Topography Global DEM API collections of
 global digital elevation models including SRTMGL3, SRTMGL1,
 AW3D30, and SRTM15Plus. Depending on source, `OSM`'s Slippy
-Tiling syntax[^1] is used where zoom represents number of
-vertical tiles counting from top-left corner in a
+Tiling syntax[^index-1] is used where zoom represents number
+of vertical tiles counting from top-left corner in a
 Peudo-Mercator grid ([EPSG:3857](https://epsg.io/3857)). At
 lower latitudes, setting parameters to `zoom=11` should
 return a data resolution of 3-arc-seconds (76m at 0°Lat).
@@ -238,7 +237,7 @@ from both `flowdem` and `whitebox` packages also allows for
 validation of challenging data tasks such as endorheic basin
 delineation.
 
-### Hydraulic Conditioning
+### 2.3.1 Hydraulic Conditioning
 
 `RichDEM`'s depression handling implements priority-flood
 algorithms [@RichDEM; @barnes2014priority] that efficiently
@@ -264,50 +263,136 @@ numerical implementations.
 #| warning: false
 #| message: false
 #| error: false
-#| eval: false
+#| eval: true
 #| echo: true
 #| comment: NA
-# Inputs
+# Compare breaching algorithms 
+time_wb <- system.time({
+  whitebox::wbt_breach_depressions(
+    dem     = "dem_chilwa_00_raw.tif",
+    output  = "dem_chilwa_11_breached_flat.tif",
+    wd      = "../assets/TIF/",
+    max_depth = 3,
+    flat_increment = 0.001)
+})
+
+time_fd <- system.time({
+  dem_breach_fd <- flowdem::breach(
+    terra::rast("../assets/TIF/dem_chilwa_00_raw.tif"))
+  terra::writeRaster(dem_breach_fd, overwrite = TRUE,
+    "../assets/TIF/dem_chilwa_01_breached.tif")
+})
+
+# Compare runtimes
+cat("\n=== Runtime Comparison ===\n")
+cat("Whitebox breach:\n")
+cat(sprintf("  Elapsed time: %.3f seconds\n", time_wb["elapsed"]))
+cat(sprintf("  User time:    %.3f seconds\n", time_wb["user.self"]))
+cat(sprintf("  System time:  %.3f seconds\n\n", time_wb["sys.self"]))
+
+cat("flowdem breach:\n")
+cat(sprintf("  Elapsed time: %.3f seconds\n", time_fd["elapsed"]))
+cat(sprintf("  User time:    %.3f seconds\n", time_fd["user.self"]))
+cat(sprintf("  System time:  %.3f seconds\n\n", time_fd["sys.self"]))
+
+
+# Compare spatially
 dem_100m   = terra::rast("../assets/TIF/dem_chilwa_00_raw.tif")
+dem_breach_fd = terra::rast("../assets/TIF/dem_chilwa_01_breached.tif")
+dem_breach_wb = terra::rast("../assets/TIF/dem_chilwa_11_breached_flat.tif")
+dem_breach_diff_fd <- dem_100m - dem_breach_fd
+dem_breach_diff_wb <- dem_100m - dem_breach_wb
+dem_breach_diff_fd[dem_breach_diff_fd == 0] <- NA
+dem_breach_diff_wb[dem_breach_diff_wb == 0] <- NA
 
-# Apply breaching & filling to depressions & flats
-dem_breach = flowdem::breach(dem_100m) 
-dem_fill   = flowdem::fill(dem_breach, epsilon=T) 
-
-# Visualize hydraulic conditioning
-dem_breach_diff <- dem_100m - dem_breach
-dem_breach_diff[dem_breach_diff == 0] <- NA
-dem_fill_diff <- dem_100m - dem_fill
-dem_fill_diff[dem_fill_diff == 0] <- NA
-
-tmap::tmap_mode("plot")
-tmap::tm_shape(dem_breach_diff) + tmap::tm_raster(col.scale=tm_scale_continuous(
-    values = hcl.colors(50, rev = TRUE),midpoint = 0), col.legend = tm_legend(title="")) +
+tmap::tmap_mode("view")
+tmap::tm_shape(dem_breach_diff_fd) + tmap::tm_raster(values="RdYlBu", title = "Change (m)",
+    breaks = c(-400, -100, -10, 0, 10, 100, 400),
+    labels = c("-400 to -100", "-100 to -10", "-10 to 0", "0 to 10", "10 to 100", ">100")) +
   tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size = .5) +
   tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("RIGHT", "top")) +
   tmap::tm_graticules(lines=T,labels.rot=c(0,90),lwd=0.2) +
-  tmap::tm_title("Effects of Breaching", size=.8) -> tm_breach
+  tmap::tm_title("Breaching Effects (Barnes, 2016)", size=.8) -> tm_breach_fd
 
-tmap::tm_shape(dem_fill_diff) + tmap::tm_raster(col.scale = tm_scale_continuous(
-    values = hcl.colors(50, rev = TRUE),midpoint = 0), col.legend = tm_legend(title="")) +
+tmap::tm_shape(dem_breach_diff_wb) + tmap::tm_raster(values="RdYlBu", title = "Change (m)",
+    breaks = c(-400, -100, -10, 0, 10, 100, 400),
+    labels = c("-400 to -100", "-100 to -10", "-10 to 0", "0 to 10", "10 to 100", ">100")) +
   tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size = .5) +
   tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("RIGHT", "top")) +
   tmap::tm_graticules(lines=T,labels.rot=c(0,90),lwd=0.2) +
-  tmap::tm_title("Effects of Filling", size=.8) -> tm_fill
-tmap::tmap_arrange(tm_breach, tm_fill, nrow=1)
+  tmap::tm_title("Breaching Effects (Lindsay, 2016a)", size=.8) -> tm_breach_wb
 
-# Outputs
-terra::writeRaster(dem_breach, overwrite = TRUE,
-  "../assets/TIF/dem_chilwa_01_breached.tif")
-terra::writeRaster(dem_fill, overwrite = TRUE,
-  "../assets/TIF/dem_chilwa_02_filled.tif")
+tmap::tmap_arrange(tm_breach_fd, tm_breach_wb, nrow=1)
 ```
 
 ![Figure 2b: Map illustrating effects of breaching and
 filling on elevation
 model.](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/MAP/breach-effects.png){fig-align="center"}
 
-### Flow Accumulation
+```{r}
+#| warning: false
+#| message: false
+#| error: false
+#| eval: true
+#| echo: true
+#| comment: NA
+# Compare filling algorithms 
+time_wb <- system.time({
+  whitebox::wbt_fill_depressions_wang_and_liu(
+  dem    = "dem_chilwa_11_breached_flat.tif",
+  output = "dem_chilwa_12_filled_wang.tif",
+  wd     = "../assets/TIF/")
+})
+
+time_fd <- system.time({
+  dem_fill_fd <- flowdem::fill(
+    terra::rast("../assets/TIF/dem_chilwa_00_raw.tif"))
+  terra::writeRaster(dem_fill_fd, overwrite = T,
+    "../assets/TIF/dem_chilwa_02_filled.tif")
+})
+
+# Compare runtimes
+cat("\n=== Runtime Comparison ===\n")
+cat("Whitebox fill:\n")
+cat(sprintf("  Elapsed time: %.3f seconds\n", time_wb["elapsed"]))
+cat(sprintf("  User time:    %.3f seconds\n", time_wb["user.self"]))
+cat(sprintf("  System time:  %.3f seconds\n\n", time_wb["sys.self"]))
+
+cat("flowdem fill:\n")
+cat(sprintf("  Elapsed time: %.3f seconds\n", time_fd["elapsed"]))
+cat(sprintf("  User time:    %.3f seconds\n", time_fd["user.self"]))
+cat(sprintf("  System time:  %.3f seconds\n\n", time_fd["sys.self"]))
+
+# Compare spatially
+dem_100m   = terra::rast("../assets/TIF/dem_chilwa_00_raw.tif")
+dem_fill_fd = terra::rast("../assets/TIF/dem_chilwa_02_filled.tif")
+dem_fill_wb = terra::rast("../assets/TIF/dem_chilwa_12_filled_wang.tif")
+dem_fill_diff_fd <- dem_100m - dem_fill_fd
+dem_fill_diff_wb <- dem_100m - dem_fill_wb
+dem_fill_diff_fd[dem_fill_diff_fd == 0] <- NA
+dem_fill_diff_wb[dem_fill_diff_wb == 0] <- NA
+
+tmap::tmap_mode("view")
+tmap::tm_shape(dem_fill_diff_fd) + tmap::tm_raster(values="RdYlBu", title = "Change (m)",
+    breaks = c(-400, -100, -10, 0, 10, 100, 400),
+    labels = c("-400 to -100", "-100 to -10", "-10 to 0", "0 to 10", "10 to 100", ">100")) +
+  tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size = .5) +
+  tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("RIGHT", "top")) +
+  tmap::tm_graticules(lines=T,labels.rot=c(0,90),lwd=0.2) +
+  tmap::tm_title("Breaching Effects (Barnes, 2016)", size=.8) -> tm_fill_fd
+
+tmap::tm_shape(dem_fill_diff_wb) + tmap::tm_raster(values="RdYlBu", title = "Change (m)",
+    breaks = c(-400, -100, -10, 0, 10, 100, 400),
+    labels = c("-400 to -100", "-100 to -10", "-10 to 0", "0 to 10", "10 to 100", ">100")) +
+  tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size = .5) +
+  tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("RIGHT", "top")) +
+  tmap::tm_graticules(lines=T,labels.rot=c(0,90),lwd=0.2) +
+  tmap::tm_title("Breaching Effects (Lindsay, 2016a)", size=.8) -> tm_fill_wb
+
+tmap::tmap_arrange(tm_fill_fd, tm_fill_wb, nrow=1)
+```
+
+### 2.3.2 Flow Accumulation
 
 Flow routing follows the D8 algorithm [@o1984extraction]
 implemented through RichDEM's optimized structures. The
@@ -327,7 +412,7 @@ counts and drainage area in km².
 
 ```{r}
 #|warning: false
-#|message: true 
+#|message: false 
 #|error: false 
 #|eval: false 
 #|echo: true 
@@ -346,12 +431,10 @@ cat("Minimum:", min(values(dem_acc), na.rm = TRUE),"cells\n")
 cat("Median:", median(values(dem_acc), na.rm =TRUE), "cells\n") 
 cat("Maximum:", max(values(dem_acc), na.rm= TRUE), "cells\n") 
 cat("Max contributing area:", round(max(values(dem_acc), na.rm=T) * 0.01, 1), "km²\n")
-streams = dem_acc >= 1000 |> as.lines(streams)
-streams[streams == 0] <- NA  # Remove non-stream cells
 
 # Visualise
 tmap::tmap_mode("view")
-tmap::tm_shape(lake) + tmap::tm_raster(
+tmap::tm_shape(dem_acc) + tmap::tm_raster(
   values="OrRd", title = "D8 Flow Acc.",
   breaks = c(1, 2, 3, 5, 10, 50, 100, 1000, 1200000),
   labels = c("1-2", "2-3", "3-5", "5-10", "10-50", "50-100", "100-1K", ">1K")) +
@@ -365,10 +448,35 @@ terra::writeRaster(dem_acc, overwrite=T,
   "../assets/TIF/dem_chilwa_04_flow_accumulation.tif")
 ```
 
-Figure 2c: Interactive map illustrating flow accumulation
-results
+```{r}
+#|warning: false
+#|error: false 
+#|eval: true 
+#|echo: false 
+#|comment: NA
+# Inputs
+dem_acc = terra::rast("../assets/TIF/dem_chilwa_04_flow_accumulation.tif")
 
-## 2.4 Watershed Delineation
+# Verify flow accumulation statistics
+cat("Flow accumulation summary (flowdem):\n")
+cat("Minimum:", min(values(dem_acc), na.rm = TRUE),"cells\n") 
+cat("Median:", median(values(dem_acc), na.rm =TRUE), "cells\n") 
+cat("Maximum:", max(values(dem_acc), na.rm= TRUE), "cells\n") 
+cat("Max contributing area:", round(max(values(dem_acc), na.rm=T) * 0.01, 1), "km²\n")
+
+# Visualise
+tmap::tmap_mode("view")
+tmap::tm_shape(dem_acc) + tmap::tm_raster(
+  values="OrRd", title = "D8 Flow Acc.",
+  breaks = c(1, 2, 3, 5, 10, 50, 100, 1000, 1200000),
+  labels = c("1-2", "2-3", "3-5", "5-10", "10-50", "50-100", "100-1K", ">1K")) +
+  tmap::tm_shape(lake) + tmap::tm_borders(col = "turquoise", lwd = 2) +
+  tmap::tm_layout(legend.text.size = 0.8, legend.title.size = 1)
+```
+
+Figure 2c: Interactive map illustrating flow accumulation
+
+### 2.3.3 Watershed Delineation
 
 The `flowdem::watershed()` function identifies all cells
 that drain to a specified feature, in this case, the Lake
@@ -398,6 +506,9 @@ calculations.
 # Inputs
 dem_dir = terra::rast("../assets/TIF/dem_chilwa_03_flow_direction.tif")
 dem_acc = terra::rast("../assets/TIF/dem_chilwa_04_flow_accumulation.tif")
+streams = dem_acc >= 1000 
+streams[streams == 0] <- NA 
+streams = terra::as.lines(streams)
 
 # Delineate extent of watershed drainage area
 watershed = flowdem::watershed(dem_dir, lake) |>
@@ -406,7 +517,7 @@ watershed = flowdem::watershed(dem_dir, lake) |>
 
 # Visual check
 tmap::tmap_mode("plot")
-tmap::tm_shape(watershed) + tmap::tm_borders(col = "turquoise", lwd = 2) +
+tmap::tm_shape(watershed) + tmap::tm_borders(col = "blue", lwd = 2) +
   tmap::tm_shape(streams) + tmap::tm_lines(col = "royalblue", lwd = 1) +
   tmap::tm_shape(lake) + tmap::tm_polygons(fill = "royalblue") +
   tmap::tm_layout(legend.text.size = 0.8, legend.title.size = 1) +
@@ -418,7 +529,11 @@ tmap::tm_shape(watershed) + tmap::tm_borders(col = "turquoise", lwd = 2) +
 sf::st_write(watershed, "../assets/SHP/watershed_chilwa_05_flowdem.shp", delete_dsn=T)
 ```
 
-## 2.5 Whitebox Tools
+![Figure 2d: Map illustrating watershed delineation derived
+in
+flowdem](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/MAP/watershed-flowdem.png)
+
+## 2.4 Whitebox Tools
 
 Lake Chilwa represents a critical challenge for standard
 watershed delineation as an endorheic, closed basin where
@@ -438,7 +553,7 @@ Implementation steps were as follows:
 -   Derive terminal drainage points,
 -   Delineate watershed and streams.
 
-### Hydraulic Conditioning
+### 2.4.1 Hydraulic Conditioning
 
 Digital elevation models contain spurious depressions and
 flat areas arising from data acquisition artifacts,
@@ -491,17 +606,12 @@ whitebox::wbt_fill_depressions_wang_and_liu(
 dem_breach = terra::rast("../assets/TIF/dem_chilwa_11_breached_flat.tif")
 dem_filled = terra::rast("../assets/TIF/dem_chilwa_12_filled_wang.tif")
 
-depression_effect <- dem_filled - dem_breach
 breach_effect = dem_100m - dem_breach  
-fill_effect   = dem_filled - dem_breach
-total_effect  = dem_filled - dem_100m  
-
+fill_effect   = dem_filled - dem_100m
 breach_effect[breach_effect == 0] <- NA
 fill_effect[fill_effect == 0] <- NA
-total_effect[total_effect == 0] <- NA
-total_log <- log10(total_effect + 0.01)  # +0.01 to handle small values
 
-# Visualize hydraulic conditioning
+# Visualize 
 tmap::tmap_mode("plot")
 tmap::tm_shape(breach_effect) + tmap::tm_raster(col.scale = tm_scale_continuous(
     values = hcl.colors(50, rev = T),midpoint=0),col.legend=tm_legend(title="")) +
@@ -518,68 +628,18 @@ tmap::tm_shape(fill_effect) + tmap::tm_raster(col.scale = tm_scale_continuous(
   tmap::tm_title("Effects of Filling", size=.8) -> tm_fill
 tmap::tmap_arrange(tm_breach, tm_fill, nrow=1)
 
-tmap::tmap_mode("view")
-tmap::tm_shape(breach_effect) + tmap::tm_raster(
-    palette = "Blues", title = "Depth (m)", style = "cont") +
-  tmap::tm_shape(fill_effect) + tmap::tm_raster(
-    values = "Oranges", title = "Depth (m)", style = "cont") +
-  tmap::tm_shape(total_effect) + tmap::tm_raster(
-    values = "YlOrRd", title = "Depth (m)", style = "cont") +
-  tmap::tm_shape(lake) + tmap::tm_borders(col = "red", lwd = 1.5) +
-  tmap::tm_layout(main.title = "Effects of Breaching")
-
-# Save for later
-terra::writeRaster(depression_effect, overwrite=T,
-  "../assets/TIF/dem_chilwa_13_depression_effects.tif")
+# Outputs
 terra::writeRaster(breach_effect, overwrite = T, 
   "../assets/TIF/dem_chilwa_11_breach_effect.tif")
 terra::writeRaster(fill_effect, overwrite = T,
   "../assets/TIF/dem_chilwa_12_fill_effect.tif")
-terra::writeRaster(total_effect, overwrite = T,
-  "../assets/TIF/dem_chilwa_13_total_effect.tif")
+
 ```
 
-```{r}
-#| warning: false
-#| message: false
-#| error: false
-#| eval: true
-#| echo: false
-#| comment: NA
+![Figure 2e: Map illustrating effects of breaching on
+elevation models](/assets/MAP/breach-effects-wb.png)
 
-dem_breach = terra::rast("../assets/TIF/dem_chilwa_11_breached_flat.tif")
-dem_filled = terra::rast("../assets/TIF/dem_chilwa_12_filled_wang.tif")
-
-breach_effect = terra::rast("../assets/TIF/dem_chilwa_11_breach_effect.tif")
-fill_effect   = terra::rast("../assets/TIF/dem_chilwa_12_fill_effect.tif")
-total_effect  = terra::rast("../assets/TIF/dem_chilwa_13_total_effect.tif")
- 
-tmap::tmap_mode("plot")
-tmap::tm_shape(breach_effect) + tmap::tm_raster(col.scale = tm_scale_continuous(
-    values = hcl.colors(50, rev = TRUE),midpoint=0),col.legend=tm_legend(title="")) +  tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size = .5) +
-  tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("RIGHT", "top")) +
-  tmap::tm_graticules(lines=T,labels.rot=c(0,90),lwd=0.2) +
-  tmap::tm_title("Effects of Breaching", size=.8) -> tm_breach
-
-tmap::tm_shape(fill_effect) + tmap::tm_raster(col.scale = tm_scale_continuous(
-    values = hcl.colors(50, rev = TRUE),midpoint=0),col.legend=tm_legend(title="")) +  tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size = .5) +
-  tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("RIGHT", "top")) +
-  tmap::tm_graticules(lines=T,labels.rot=c(0,90),lwd=0.2) +
-  tmap::tm_title("Effects of Filling", size=.8) -> tm_fill
-tmap::tmap_arrange(tm_breach, tm_fill, nrow=1)
-
-tmap::tmap_mode("view")
-tmap::tm_shape(breach_effect) + tmap::tm_raster(
-    palette = "Blues", title = "Depth (m)", style = "cont") +
-  tmap::tm_shape(fill_effect) + tmap::tm_raster(
-    values = "Oranges", title = "Depth (m)", style = "cont") +
-  tmap::tm_shape(total_effect) + tmap::tm_raster(
-    values = "YlOrRd", title = "Depth (m)", style = "cont") +
-  tmap::tm_shape(lake) + tmap::tm_borders(col = "red", lwd = 1.5) +
-  tmap::tm_layout(main.title = "Effects of Breaching & Filling")
-```
-
-### Flow Accumulation
+### 2.4.2 Flow Accumulation
 
 Flow accumulation was computed using the D8
 single-flow-direction algorithm [@o1984extraction] via the
@@ -635,7 +695,7 @@ tmap::tm_shape(dem_acc) + tmap::tm_raster(
   tmap::tm_layout(legend.text.size = 0.8, legend.title.size = 1)
 ```
 
-### Depression Analysis
+### 2.4.3 Depression Analysis
 
 Endorheic basins are characterized by internal drainage
 networks where water accumulates in topographic depressions
@@ -686,22 +746,21 @@ wetness_idx <- terra::rast("../assets/TIF/dem_chilwa_16_wetness_index.tif")
 flow_accum <- terra::rast("../assets/TIF/dem_chilwa_14_flow_accumulation_D8.tif")
 
 tmap::tmap_mode("view")
-tmap::tm_shape(sink_depth) + tmap::tm_raster(values = "Blues", 
-  alpha=0.7, title = "Sink Depth (m)", style = "quantile", n=7) +
-  tmap::tm_shape(wetness_idx) + tmap::tm_raster(values="YlGnBu", 
-  alpha=0.5, title="Wetness Index", style = "quantile", n=7) +
+tmap::tm_shape(sink_depth) + tmap::tm_raster(values = "steelblue", 
+  alpha=1, title = "Depression Sink Depths", style = "quantile", n=7) +
+  tmap::tm_shape(wetness_idx) + tmap::tm_raster(values="darkgreen", 
+  alpha=1, title="Wetness Index", style = "quantile", n=7) +
   tmap::tm_shape(lake) + tmap::tm_borders(col = "turquoise", lwd = 2) +
-  tmap::tm_layout(legend.text.size = 0.8, legend.title.size = 1) +
-  tmap::tm_basemap("Esri.WorldImagery")
+  tmap::tm_layout(legend.text.size = 0.8, legend.title.size = 1)
 
 par(mfrow = c(1, 2))
 hist(sink_depth[sink_depth <= 25], breaks = 30,
      main = "Depths 0-10m", xlab = "Depth (m)", col = "steelblue")
 hist(values(wetness_idx), breaks = 50, xlab = "TWI Value", 
-     main = "Distribution of Wetness Index", col = "darkgreen")
+     main = "Topographic Wetness Index", col = "darkgreen")
 ```
 
-### Terminal Pour Points
+### 2.4.4 Terminal Pour Points
 
 Standard watershed delineation algorithms require pour
 points (outlet locations) where accumulated flow exits the
@@ -772,7 +831,7 @@ tmap::tm_shape(dem_acc) + tmap::tm_raster(
 
 ```
 
-## 2.6 Streams Delineation
+### 2.4.5 Streams Delineation
 
 ```{r}
 #| warning: false
@@ -982,7 +1041,7 @@ writeRaster(dem_acc_7arc, "../assets/TIF/dem_7arc_acc.tif", overwrite=T)
 writeRaster(dem_acc_5arc, "../assets/TIF/dem_5arc_acc.tif", overwrite=T)
 ```
 
-## 2.7 Build 3D map
+## 2.5 Build 3D map
 
 ```{r watershed-render}
 #| warning: false
@@ -1047,7 +1106,7 @@ dem_matrix |>
   )
 ```
 
-## 2.8 Render 3D map
+## 2.5 Render 3D map
 
 ```{r watershed-save}
 #| eval: false
@@ -1160,4 +1219,4 @@ sf::sf_use_s2(use_s2 = FALSE)
 devtools::session_info()
 ```
 
-[^1]: <https://wiki.openstreetmap.org/wiki/Slippy_map>
+[^index-1]: <https://wiki.openstreetmap.org/wiki/Slippy_map>

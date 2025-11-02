@@ -7,7 +7,6 @@ format:
     toc: true
     toc-location: right
     toc-depth: 4
-    toc-expand: 2 
     toc-title: "**On this page**"
     number-sections: false
     highlight-style: pygments
@@ -18,14 +17,15 @@ editor_options:
     wrap: 60
 ---
 
+## 3.0 Overview 
+
+### Environment Setup
+
 ```{r setup}
 #| warning: false
 #| message: false
-#| include: false
-#| echo: false
+#| echo: true
 #| comment: NA
-
-#install.packages("easypackages")
 pacman::p_load(
   "cli", "cols4all", "covr", "cowplot",
   "dendextend", "digest", "DiagrammeR", "dtwclust", "downlit",
@@ -49,6 +49,14 @@ pacman::p_load(
   "tmap", "tmaptools", "terrainr",
   "xgboost"
 )
+```
+
+```{r}
+#| warning: false
+#| message: false
+#| include: false
+#| echo: false
+#| comment: NA
 
 knitr::opts_chunk$set(
   echo    = T, 
@@ -146,9 +154,6 @@ sf::st_write(aoi_03, "../assets/SHP/aoi_03.shp", delete_dsn = T)
 #| echo: true
 #| eval: false
 #| comment: NA
-library(osmdata)
-library(rmapshaper)
-
 bc_province = sf::st_read("../assets/SHP/aoi_01.shp", quiet=T) |>
   sf::st_make_valid() |> dplyr::filter(NAME_1 == "British Columbia") 
 bc_districts = sf::st_read("../assets/SHP/aoi_02.shp", quiet=T)|>
@@ -219,7 +224,6 @@ tm01_live
 #| echo: false
 #| eval: true
 #| comment: NA
-
 crs_master = "EPSG:3005"
 island_districts = sf::st_read("../assets/SHP/island_districts.shp", quiet=T)|> 
   sf::st_transform(crs_master)
@@ -240,6 +244,9 @@ tmap::tm_shape(island_counties) + tm_borders(lwd=0) +
   tmap::tm_basemap("Esri.WorldImagery")  -> tm01_live
 tm01_live
 ```
+
+Figure 3a Interactive map of delineated shoreline and
+administrative boundaries
 
 ```{r basemap-save}
 #| comment: NA
@@ -329,8 +336,8 @@ tm03_live
 
 ## 3.3 Process DEM
 
-**Note:** More efficient conditioning algorithms available
-with `RichDEM` library [^1]
+Additional conditioning algorithms are available within the
+`RichDEM` library [^1]
 
 ```{r}
 #| comment: NA
@@ -338,37 +345,33 @@ with `RichDEM` library [^1]
 #| message: false
 #| eval: false
 #| echo: true
-crs_master = "EPSG:3005"
+# Inputs
 island_shoreline = sf::st_read("../assets/SHP/island_shoreline.shp", quiet=T)
-
-# z = 12: 1-Arc Second 
-# z = 11: 3-Arc Second 
-# z = 10: 5-Arc Second 
 dem_7arc = elevatr::get_elev_raster(island_shoreline, z=9,clip="locations")|>
   terra::rast()|> 
   terra::crop(terra::vect(island_shoreline)) |>  
   terra::project(crs_master)
 
-#Process DEM by breaching & filling depressions & flats
+# Apply breaching & filling algorithms
 dem_condt_7arc  = dem_7arc |> 
   flowdem::breach() |>
-  flowdem::fill(epsilon=T) 
-  #flowdem::fill_basins() # costal basins
+  flowdem::fill(epsilon=T) |>
+  flowdem::fill_basins() # costal basins
 
 # Calculate flow direction & accumulation
 dem_dir_7arc = dem_condt_7arc |> flowdem::dirs(mode="d8")
-dem_dir_5arc = dem_condt_5arc |> flowdem::dirs(mode="d8")
 dem_acc_7arc = dem_dir_7arc |> flowdem::accum(mode="d8")
-dem_acc_5arc = dem_dir_5arc |> flowdem::accum(mode="d8")
 
-#tmap::tm_shape(dem) + 
-#  tmap::tm_raster(
-#    col.scale = tm_scale_continuous(values = "viridis"),
-#    col.legend = tm_legend(title = "Elevation (m)", reverse = T)) + 
-#  tmap::tm_graticules(lines = T, labels.rot = c(0, 90), lwd = 0.2) +
-#  tmap::tm_scalebar(position = c("LEFT", "BOTTOM"), text.size = 0.5) + 
-#  tmap::tm_compass(color.dark="gray60",text.color="gray60")+
-#  tmap::tm_basemap("Esri.WorldImagery")
+tmap::tm_shape(dem) + 
+  tmap::tm_raster(
+    col.scale = tm_scale_continuous(values = "viridis"),
+    col.legend = tm_legend(title = "Elevation (m)", reverse = T)) + 
+  tmap::tm_graticules(lines = T, labels.rot = c(0, 90), lwd = 0.2) +
+  tmap::tm_scalebar(position = c("LEFT", "BOTTOM"), text.size = 0.5) + 
+  tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("top","left"))+
+  tmap::tm_basemap("Esri.WorldImagery")
+
+# Outputs
 writeRaster(dem_condt_7arc, "../assets/TIF/dem_7arc_condt.tif", overwrite=T)
 writeRaster(dem_condt_5arc, "../assets/TIF/dem_5arc_condt.tif", overwrite=T)
 writeRaster(dem_dir_7arc, "../assets/TIF/dem_7arc_dir.tif", overwrite=T)
@@ -397,9 +400,23 @@ tmap::tm_shape(dem) +
   tmap::tm_basemap("Esri.WorldImagery")
 ```
 
-![](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/MAP/elevation_map_2D.png)
+![](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/MAP/elevation_map_2D.png){fig-align="center"}
 
-## 3.4 Delineate Streams
+Figure 3b Map of conditioned elevation model clipped to
+extracted shoreline
+
+## 3.4 Extract Sub-basin
+
+```{r}
+#| warning: false
+#| message: false
+#| comment: NA
+#| eval: false
+#| echo: true
+dem = terra::rast("../assets/TIF/dem_7arc_condt.tif")
+```
+
+## 3.5 Delineate Streams
 
 ```{r}
 #| comment: NA
@@ -509,7 +526,7 @@ sf::st_write(basins, "./assets/SHP/basins.shp", delete_dsn=T)
 sf::st_write(rivers, "./assets/SHP/streams.shp", delete_dsn=T)
 ```
 
-## 3.5 Build 3D Map
+## 3.6 Build 3D Map
 
 ```{r}
 #| comment: NA
@@ -565,7 +582,7 @@ matrix |>
 #  )
 ```
 
-## 3.6 Render 3D Map
+## 3.7 Render 3D Map
 
 ```{r map-render}
 #| eval: false
@@ -678,8 +695,6 @@ rayshader::render_highquality(
 
 
 ```
-
-### Environment Setup
 
 ### Runtime Log
 

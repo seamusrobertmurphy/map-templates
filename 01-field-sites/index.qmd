@@ -6,20 +6,12 @@ format:
   html:
     toc: true
     toc-location: right
-    toc-expand: 2
     toc-depth: 4
     toc-title: "**On this page**"
-    highlight-style: pygments
     number-sections: false
-    theme: 
-      - ../styles.scss
-      - default
-    embed-resources: false
+    highlight-style: pygments
+    page-layout: article
 
-engine: knitr
-bibliography: ../references/references.bib
-csl: ../references/apa.csl
-citeproc: true
 editor_options: 
   markdown: 
     wrap: 60

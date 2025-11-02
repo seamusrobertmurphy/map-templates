@@ -388,3 +388,16 @@ outlets = sf::st_read("./assets/SHP/outlets_multiple.shp", quiet=T)
 tmap::tm_shape(dem_acc) + tmap::tm_raster(values="brewer.reds") +
   tmap::tm_shape(lake) + tmap::tm_borders(col="lightblue") +
   tmap::tm_shape(outlets) + tmap::tm_symbols(shape="id",lwd=2)
+
+dem_breach_diff <- dem_100m - dem_breach
+dem_breach_diff[dem_breach_diff == 0] <- NA
+dem_fill_diff <- dem_100m - dem_fill
+dem_fill_diff[dem_fill_diff == 0] <- NA
+
+depression_effect <- dem_filled - dem_breach
+breach_effect = dem_100m - dem_breach  
+fill_effect   = dem_filled - dem_breach
+total_effect  = dem_filled - dem_100m  
+
+total_effect[total_effect == 0] <- NA
+total_log <- log10(total_effect + 0.01)  # +0.01 to handle small values

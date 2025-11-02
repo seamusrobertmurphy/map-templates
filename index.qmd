@@ -128,8 +128,8 @@ Download census and settlement data. Interpolate population density. Classify se
 
 ### Gallery {.unnumbered}
 
-:::: {style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 0.1rem; margin: 0; padding: 0;"}
-::: {style="grid-column: span 3; margin: 0; padding: 0;"}
+:::: {style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.1rem; margin: 0; padding: 0;"}
+::: {style="grid-column: span 2; margin: 0; padding: 0;"}
 ![](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/03-locator-map.png)
 :::
 
