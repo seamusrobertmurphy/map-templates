@@ -1,0 +1,6 @@
+{
+    "positron.assistant.enable": true,
+    "positron.assistant.showTokenUsage.enable": true,
+    "positron.assistant.toolDetails.enable": true,
+    "positron.assistant.consoleActions.enable": true
+}

@@ -1,8 +1,145 @@
 ---
-title: ""
-listing: 
-  contents: landing.yml
-  type: grid
-  sort: false
+format:
+  html:
+    toc: true
+    toc-location: right
+    toc-depth: 3
+    toc-expand: true
+    toc-title: "**Contents**"
+    number-sections: false
+    embed-resources: false
+    theme: 
+      - styles.scss
+      - default
 ---
 
+# Preface {.unnumbered}
+
+------------------------------------------------------------------------
+
+```{r}
+#| warning: false
+#| message: false
+#| include: false
+#| echo: false
+#| comment: NA
+
+options(repos = c(CRAN = "https://cloud.r-project.org"),
+        htmltools.dir.version = FALSE, 
+        htmltools.preserve.raw = FALSE
+        )
+
+knitr::opts_chunk$set(
+  echo = TRUE, 
+  message = FALSE, 
+  warning = FALSE,
+  error = FALSE, 
+  comment = NA, 
+  tidy.opts = list(width.cutoff = 60)
+  ) 
+
+#install.packages("easypackages")
+#pak::pkg_install(c(
+#libs = c(
+easypackages::packages(
+  "bslib", 
+  "cols4all", "covr", "cowplot", 
+  "dendextend", "digest","DiagrammeR","dtwclust", "downlit", 
+  "e1071", "exactextractr","elevatr", 
+  "FNN", "future", 
+  "gdalcubes", "gdalUtilities", "geojsonsf", "geos", "ggplot2", "ggstats", 
+  "ggspatial", "ggmap", "ggplotify", "ggpubr", "ggrepel", "giscoR", 
+  "hdf5r", "httr", "httr2", "htmltools",
+  "jsonlite", 
+  "kohonen", 
+  "leaflet.providers", "leafem", "libgeos","luz","lwgeom", "leaflet", "leafgl",
+  "mapedit", "mapview", "maptiles", "methods", "mgcv", 
+  "ncdf4", "nnet", 
+  "openxlsx", "parallel", "plotly", 
+  "randomForest", "rasterVis", "raster", "Rcpp", "RcppArmadillo", 
+  "RcppCensSpatial","rayshader", "RcppEigen", "RcppParallel", 
+  "RColorBrewer", "reactable", "rgl", "rsconnect","RStoolbox", "rts", 
+  "s2", "sf", "scales", "sits","spdep", "stars", "stringr","supercells", 
+  "terra", "testthat", "tidyverse", "tidyterra","tools", 
+  "tmap", "tmaptools", "terrainr", 
+  "xgboost",
+  prompt = F)
+
+#installed_libs <- libs %in% rownames(installed.packages())
+#if(any(installed_libs == F)){install.packages(libs[!installed_libs])}
+#invisible(lapply(libs, library, character.only = T))
+
+#lib = .libPaths()[[1L]], upgrade = F, ask = F, dependencies = T)
+#mapviewOptions(fgb = FALSE)
+sf::sf_use_s2(use_s2 = FALSE)
+```
+
+```{css, echo=FALSE, class.source = 'foldable'}
+div.column {
+    display: inline-block;
+    vertical-align: top;
+    width: 50%;
+}
+
+#TOC::before {
+  content: "";
+  display: block;
+  height:200px;
+  width: 200px;
+  background-image: url('https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/01-site-map.png');
+  background-size: contain;
+  background-position: 50% 50%;
+  padding-top: 80px !important;
+  background-repeat: no-repeat;
+}
+```
+
+This book provides a series templates and guides for deriving standard operational maps. The sequence of chapters was designed for data stream efficiency: site context establishes area-of-interest geometry, watershed delineation derives flow structure, stream delineation extracts hydrological features, topographic analysis conditions elevation data and computes terrain metrics, climate mapping interpolates environmental surfaces, and demographic mapping contextualizes human populations. Each stage reuses outputs from prior chapters, minimizing reprocessing and enabling iterative refinement of area-of-interest boundaries, coordinate systems, and spatial resolution.
+
+------------------------------------------------------------------------
+
+# Mapping Workflows
+
+## Chapter 1: Site Maps
+
+Define area-of-interest (AOI), establish coordinate reference system (CRS), load boundary geometries, and create reference maps. All downstream chapters inherit AOI and CRS from this stage.
+
+## Chapter 2: Watershed Maps
+
+Download and condition digital elevation models. Breach channels, fill depressions. Compute flow direction and accumulation. Delineate watershed boundaries. Validate against observed drainage patterns. Watershed boundaries define the fundamental geographic unit for all subsequent analysis.
+
+## Chapter 3: Riparian Maps
+
+Extract stream networks from flow accumulation surfaces. Delineate riparian zones and floodplain extent. Validate stream locations against hydrographic databases and field observations. Stream networks and riparian zones structure all operational mapping.
+
+## Chapter 4: Topography Maps
+
+Use conditioned DEM from Chapter 2. Compute slope and aspect. Classify terrain. Generate hillshade and relief visualization. Topographic products describe landscape geometry essential to operations and analysis.
+
+## Chapter 5: Climate Maps
+
+Download weather station data. Temporally aggregate (daily, monthly, seasonal, annual). Spatially interpolate using kriging or inverse distance weighting. Generate temperature, precipitation, humidity, and wind surfaces. Climate data provide environmental context for operations.
+
+## Chapter 6: Population Maps
+
+Download census and settlement data. Interpolate population density. Classify settlement, visualize demographic context. Population data situate operations within human geography.
+
+------------------------------------------------------------------------
+
+### Gallery {.unnumbered}
+
+:::: {style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 0.1rem; margin: 0; padding: 0;"}
+::: {style="grid-column: span 3; margin: 0; padding: 0;"}
+![](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/03-locator-map.png)
+:::
+
+![](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/06-watershed-3D.png) 
+
+![](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/MAP/stream_map_high_b.png) 
+
+![](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/MAP/aspect_chilwa_2d.png) 
+
+![](https://raw.githubusercontent.com/seamusrobertmurphy/forest-fire-risk-cffdrs/main/assets/PNG/temp.png) 
+
+![](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/04-population-map.png)
+::::

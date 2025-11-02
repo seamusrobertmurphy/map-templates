@@ -1,66 +1,81 @@
 project:
-  type: website
+  type: book
 
-website:
-  title: "Map Templates"
-  open-graph: true # https://quarto.org/docs/websites/website-tools.html#open-graph
-  navbar:
-    title: "Map Templates"
+book:
+  title: "Mapping Templates"
+  author: 
+    - name: Seamus Murphy
+      url: https://scholar.google.com/citations?hl=en&user=jDGq9I4AAAAJ
+      orcid: 0000-0002-1792-0351 
+      email: seamusrobertmurphy@gmail.com
+  date: today
+  favicon: assets/PNG/favicon.png
+  open-graph: true 
+  page-footer:
+    left: "[Source](https://github.com/seamusrobertmurphy/lidar-forestry)"
+    right: |
+      [LinkedIn](https://linkedin.com/in/seamusrobertmurphy) | 
+      [Resume](https://drive.google.com/uc?export=download&id=13YLhsRCAMMHQw-jd2SJdaRJH9udBGytP) | 
+      [Scholar](https://scholar.google.com/citations?hl=en&user=jDGq9I4AAAAJ)
+
+  site-url: https://seamusrobertmurphy.quarto.pub/map-templates
+  repo-url: https://github.com/seamusrobertmurphy/map-templates
+  repo-branch: main
+  repo-actions: [edit, issue]
+
+  chapters:
+    - index.qmd
+    - 01-field-sites/index.qmd
+    - 02-watersheds/index.qmd
+    - 03-streams/index.qmd
+    - 04-topography/index.qmd
+    - 05-climate/index.qmd
+    - 06-demography/index.qmd
+
+  appendices:
+    - references/index.qmd
+
+bibliography: references/references.bib
+csl: references/apa.csl
+citeproc: true  
+
+filters:
+  - quarto
+
+sidebar:
+    title: "Mapping Templates"
     search: true
-    right:
-      - text: "Home"
-        href: index.qmd
-      - text: "Sites"
-        href: site-map.qmd
-      - text: "Watershed"
-        href: watershed-map.qmd
-      - text: "Riparian"
-        href: stream-map.qmd 
-      - text: "Topography"
-        href: topo-map.qmd 
-      - text: "Climate"
-        href: climate-map.qmd
-      - text: "Demography"
-        href: population-map.qmd
-    tools:
-      - icon: github
-        menu:
-          - text: Source Code
-            href: https://github.com/seamusrobertmurphy
-          - text: Report a Bug
-            href: https://github.com/seamusrobertmurphy
-      - icon: linkedin
-        href: https://linkedin.com/in/seamusrobertmurphy
-      
-  sidebar:
-      pinned: true
-      style: "docked"
-      collapse-level: 1
-      contents:
-      - text: "Home"
-        href: index.qmd
-      - text: "Site Maps"
-        href: site-map.qmd
-      - text: "Watershed Maps"
-        href: watershed-map.qmd
-      - text: "Riparian Maps"
-        href: stream-map.qmd 
-      - text: "Topography Maps"
-        href: topo-map.qmd 
-      - text: "Climate Maps"
-        href: climate-map.qmd
-      - text: "Demography Maps"
-        href: population-map.qmd
-      - section: "About"
-        contents:
-          - text: "Resume"
-            href: about.qmd
+    style: "docked"
+    collapse-level: 4
 
 format:
   html:
-    theme: [cosmo, styles.scss]
-    fig-width: 8
-    fig-height: 6
-    fig-dpi: 150  
-    fig-format: png
+    number-depth: 2
+    toc-location: right
+    toc-depth: 4
+    theme: 
+      - styles.scss
+      - default
+    code-fold: false
+    code-summary: "Code"
+    code-tools: true
+    code-link: true
+    title-block-style: plain
+    knitr:
+      opts_chunk:
+        out.width: 100%
+        R.options:
+          width: 60
+
 engine: knitr
+
+knitr:
+  opts_chunk: 
+    collapse: true
+    comment: "#" 
+    R.options:
+      knitr.graphics.auto_pdf: true
+      dplyr.print_min: 6
+      dplyr.print_max: 6
+      stars.crs: 17
+      digits: 3

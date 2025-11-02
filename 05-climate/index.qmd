@@ -1,0 +1,367 @@
+---
+title: "Climate"
+execute:
+  echo: true
+format:
+  html:
+    toc: true
+    toc-location: right
+    toc-depth: 3
+    toc-expand: true 
+    toc-title: "**On this page**"
+    highlight-style: pygments
+    page-layout: article
+
+editor_options: 
+  markdown: 
+    wrap: 60
+---
+
+```{r setup}
+#| warning: false
+#| message: false
+#| include: false
+#| echo: false
+#| comment: NA
+
+#install.packages("easypackages")
+pacman::p_load(
+  "devtools",
+  "bibtex",
+  "cffdrs", "curl", "cols4all", "chromote",
+  "dplyr",
+  "elevatr", "ellmer",
+  "gstat", "geonetwork",
+  "htmltools", "httr2",
+  "janitor",
+  "kableExtra", "knitr",
+  "lutz", 
+  "mapedit","mapview", 
+  "ncdf4",
+  "openxlsx","OpenStreetMap", "osmdata",
+  "pandoc", "pandocfilters", "PROJ",
+  "raster", "rasterVis", "reproj", "rmapshaper", "renv", "rmarkdown",
+  "sf",
+  "tinytex", "tmap", "tmaptools", "terra", "tmap.networks", "tmap.glyphs", "tmap.cartogram",
+  "useful", "usethis", 
+  "weathercan")
+
+knitr::opts_chunk$set(
+  echo    = T, 
+  error   = F, 
+  message = F, 
+  warning = F,
+  comment = NA, 
+  tidy.opts = list(
+    width.cutoff = 60)
+  )
+
+options(
+  htmltools.dir.version = F, 
+  htmltools.preserve.raw = F)
+
+tmap::tmap_options(
+  component.autoscale=F,
+  max.raster = c(plot=8000000, view=10000000)
+  )
+
+mapviewOptions(fgb = FALSE)
+sf::sf_use_s2(use_s2 = FALSE)
+```
+
+```{css, echo=FALSE, class.source = 'foldable'}
+div.column {
+    display: inline-block;
+    vertical-align: top;
+    width: 50%;
+}
+
+#TOC::before {
+  content: "";
+  display: block;
+  height:200px;
+  width: 200px;
+  background-image: url('https://raw.githubusercontent.com/seamusrobertmurphy/forest-fire-risk-cffdrs/main/assets/PNG/temp.png');
+  background-size: contain;
+  background-position: 50% 50%;
+  padding-top: 80px !important;
+  background-repeat: no-repeat;
+}
+```
+
+## 1. Import AOI Data
+
+```{r aoi-import}
+#| comment: NA
+#| warning: false
+#| message: false
+#| eval: false
+#| echo: true
+
+download.file(
+  url      = "https://data.hydrosheds.org/file/HydroBASINS/customized_with_lakes/hybas_lake_na_lev06_v1c.zip",
+  destfile = "../assets/SHP/watersheds_na_l6.zip",
+  mode     = "wb"
+  )
+
+unzip(
+  zipfile = "../assets/SHP/watersheds_na_l6.zip",
+  exdir   = "../assets/SHP/"
+  )
+
+xy         = "49.95,-119.43"
+watersheds = sf::st_read("../assets/SHP/watersheds_na_l6/hybas_lake_na_lev06_v1c.shp")
+aoi_xy     = sf::st_read("../assets/SHP/aoi_xy.shp")
+aoi        = watersheds |> sf::st_intersection(aoi_xy) 
+sf::st_write(aoi, "../assets/SHP/aoi_watershed.shp")
+
+tmap::tmap_mode("view")
+tmap::tm_shape(aoi) + tmap::tm_borders(col="purple", lwd=2) +
+  tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size = .5) +
+  tmap::tm_title("AOI Waterhsed", size=.8) 
+```
+
+```{r}
+#| comment: NA
+#| warning: false
+#| message: false
+#| error: false
+#| echo: false
+#| eval: true
+
+aoi = sf::st_read("../assets/SHP/aoi_watershed.shp", quiet=T)
+
+tmap::tmap_mode("view")
+tmap::tm_shape(aoi) + tmap::tm_borders(col="purple", lwd=2) +
+  tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size = .5) +
+  tmap::tm_title("AOI Waterhsed", size=.8) +
+  tmap::tm_basemap("Esri.WorldImagery")
+```
+
+## 2. Import DEM Data
+
+**Note:** More efficient conditioning algorithms available
+with `RichDEM` library [^1]
+
+```{r}
+#| comment: NA
+#| warning: false
+#| message: false
+#| eval: false
+#| echo: true
+
+# z = 12: 1-Arc Second 
+# z = 11: 3-Arc Second 
+# z = 10: 5-Arc Second 
+#Download and process DEM 
+dem = elevatr::get_elev_raster(aoi, z=10,clip="locations")|>
+  terra::rast() |> 
+  terra::crop(terra::vect(aoi)) |>
+  flowdem::breach() |>
+  flowdem::fill(epsilon=T) 
+
+raster::writeRaster(dem, "../assets/TIF/dem_5arc_condt_kelowna.tif", overwrite=T)
+```
+
+## 3. Import Climate Data
+
+Climate data, a fundamental input for wildfire weather calculations, is sourced from Environment and Climate Change Canada using the `weathercan` package. This approach replaces the manual data sourcing from platforms with reproducible, verifiable solution. The workflow begins by searching for all weather stations within a specified radius of the AOI. Hourly data for these stations is downloaded for the defined date range and then aggregated to a single mean value for each station for the target period. The cleaned, point-based spatial data is converted into continuous raster layers for each input variable, which are derived using Inverse Distance Weighting (IDW) method via a `gstat` model and the `terra::interpolate` function. The resulting outputs of mean daily temperature, precipitation, relative humidity, and wind speed are then masked to the AOI and saved for use in the next stages of the analysis.
+
+```{r}
+#| comment: NA
+#| warning: false
+#| message: false
+#| error: false
+#| eval: false
+#| echo: true
+
+# Search weather stations
+stations_100km = weathercan::stations_search(
+  coords  = c(49.95,-119.43), 
+  interval= "day",
+  dist    = 100)
+
+# Parse by station
+stations_ids_unique <- stations_100km |>
+  dplyr::pull(station_id) |> unique()
+
+# Download data for all selected stations
+climate_tbl <- weathercan::weather_dl(
+  station_ids = stations_ids_unique,
+  start = "2021-06-01",
+  end = "2021-10-01",
+  interval = "hour") # relative humidity in hourly only
+
+# Aggregate by station
+aggregated_data <- climate_tbl |>
+  dplyr::group_by(station_id, lat, lon) |>
+  dplyr::summarise(
+    mean_temp = mean(temp, na.rm = TRUE),
+    mean_prec = mean(prec_amt, na.rm = TRUE),
+    mean_rh   = mean(rel_hum, na.rm = TRUE),
+    mean_ws   = mean(wind_spd, na.rm = TRUE)
+  ) |>
+  dplyr::ungroup()
+
+# Convert to spatial and filter missing stations
+climate_sf <- aggregated_data |>
+  dplyr::filter(
+    !is.nan(mean_temp),
+    !is.nan(mean_prec),
+    !is.nan(mean_rh),
+    !is.nan(mean_ws)
+  ) |>
+  sf::st_as_sf(
+    coords = c("lon", "lat"),
+    crs = 4326
+  ) |>
+  sf::st_transform("EPSG:3857")
+
+# Derive raster template to interpolate on top of
+raster_template <- terra::rast("../assets/TIF/elevation.tif")
+
+# Derive function to handle `sf` weather station data
+interpolate_stations <- function(model, x, crs, ...) {
+	v <- st_as_sf(x, coords = c("x", "y"), crs = crs)
+	p <- predict(model, v, ...)
+	as.data.frame(p)[, 1:2]
+  }
+
+# Create Inverse Distance Weighting models using gstat.pkg
+temp_idw <- gstat(
+  formula = mean_temp ~ 1, 
+  locations = climate_sf,
+  nmax = 8, 
+  set = list(idp = 2.0) 
+  )
+
+prec_idw <- gstat(
+  formula = mean_prec ~ 1, 
+  locations = climate_sf,
+  nmax = 8, 
+  set = list(idp = 2.0) 
+  )
+
+rh_idw <- gstat(
+  formula = mean_rh ~ 1, 
+  locations = climate_sf,
+  nmax = 8, 
+  set = list(idp = 2.0) 
+  )
+
+ws_idw <- gstat(
+  formula = mean_ws ~ 1, 
+  locations = climate_sf,
+  nmax = 8, 
+  set = list(idp = 2.0) 
+  )
+
+
+# Spatially interpolate using terra.pkg
+temp_rast <- terra::interpolate(
+  object = raster_template,
+  model = temp_idw,
+  fun = interpolate_stations,
+  crs = "EPSG:3857",
+  debug.level = 0
+)
+
+prec_rast <- terra::interpolate(
+  object = raster_template,
+  model = prec_idw,
+  fun = interpolate_stations,
+  crs = "EPSG:3857",
+  debug.level = 0
+)
+
+rh_rast <- terra::interpolate(
+  object = raster_template,
+  model = rh_idw,
+  fun = interpolate_stations,
+  crs = "EPSG:3857",
+  debug.level = 0
+)
+
+ws_rast <- terra::interpolate(
+  object = raster_template,
+  model = ws_idw,
+  fun = interpolate_stations,
+  crs = "EPSG:3857",
+  debug.level = 0
+)
+
+# Tidy, save, and visualize
+temp    = terra::mask(temp_rast, terra::vect(sf::st_transform(aoi, "EPSG:3857")))
+prec    = terra::mask(prec_rast, terra::vect(sf::st_transform(aoi, "EPSG:3857")))
+rh      = terra::mask(rh_rast, terra::vect(sf::st_transform(aoi, "EPSG:3857")))
+ws      = terra::mask(ws_rast, terra::vect(sf::st_transform(aoi, "EPSG:3857")))
+
+terra::writeRaster(temp, "../assets/TIF/temp.tif", overwrite=T)
+terra::writeRaster(prec, "../assets/TIF/prec.tif", overwrite=T)
+terra::writeRaster(rh, "../assets/TIF/rh.tif", overwrite=T)
+terra::writeRaster(ws, "../assets/TIF/ws.tif", overwrite=T)
+```
+
+## 4. Render Maps
+
+```{r}
+#| comment: NA
+#| warning: false
+#| message: false
+#| error: false
+#| eval: false
+#| echo: true
+
+
+tmap::tmap_mode("plot")
+tmap::tm_shape(temp)+ tm_raster(style= "cont", 
+  title="Mean Daily Temperature (°C 2m AGL)", palette="Oranges")+
+  tmap::tm_shape(aoi)+ tm_borders(col="purple", lwd = 2) +
+  tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("RIGHT","top"))+
+  tmap::tm_graticules(lines=T,labels.rot=c(0,90),lwd=0.2) +
+  tmap::tm_scale_bar(c(0, 10, 20, 40), position = c("RIGHT", "BOTTOM"), text.size = .5) -> tm1
+
+tmap::tm_shape(prec)+ tm_raster(style= "cont", 
+  title="Mean Daily Precipitation (mm^3/day)", palette="Oranges") +
+  tmap::tm_shape(aoi)+ tm_borders(col="purple", lwd = 2) +
+  tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("RIGHT","top"))+
+  tmap::tm_graticules(lines=T,labels.rot=c(0,90),lwd=0.2) +
+  tmap::tm_scale_bar(c(0, 10, 20, 40), position = c("RIGHT", "BOTTOM"), text.size = .5) -> tm2
+  
+tmap::tm_shape(rh)+ tm_raster(style= "cont", 
+  title="Relative Humidity (NCDC 2m AGL)", palette="Oranges") +
+  tmap::tm_shape(aoi)+ tm_borders(col="purple", lwd = 2) +
+  tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("RIGHT","top"))+
+  tmap::tm_graticules(lines=T,labels.rot=c(0,90),lwd=0.2) +
+  tmap::tm_scale_bar(c(0, 10, 20, 40), position = c("RIGHT", "BOTTOM"), text.size = .5) -> tm3
+
+tmap::tm_shape(ws)+ tm_raster(style= "cont", 
+  title="Wind Speed (m/s 10m AGL)", palette="Oranges") +
+  tmap::tm_shape(aoi)+ tm_borders(col="purple", lwd = 2) +
+  tmap::tm_compass(color.dark="gray60",text.color="gray60",position=c("RIGHT","top"))+
+  tmap::tm_graticules(lines=T,labels.rot=c(0,90),lwd=0.2) +
+  tmap::tm_scale_bar(c(0, 10, 20, 40), position = c("RIGHT", "BOTTOM"), text.size = .5) -> tm4
+
+tmap::tmap_arrange(tm1, tm2, tm3, tm4, nrow=2)
+```
+
++:-----------------------------------------------------------------------------------------------------------------------:+:---------------------------------------------------------------------------------------------------------------------:+
+| ![](https://raw.githubusercontent.com/seamusrobertmurphy/forest-fire-risk-cffdrs/main/assets/PNG/temp.png){width="345"} | ![](https://raw.githubusercontent.com/seamusrobertmurphy/forest-fire-risk-cffdrs/main/assets/PNG/rh.png){width="345"} |
++-------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------+
+| ![](https://raw.githubusercontent.com/seamusrobertmurphy/forest-fire-risk-cffdrs/main/assets/PNG/prec.png){width="345"} | ![](https://raw.githubusercontent.com/seamusrobertmurphy/forest-fire-risk-cffdrs/main/assets/PNG/ws.png){width="345"} |
++-------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------+
+
+### Runtime Log
+
+```{r session-info}
+#| eval: true
+devtools::session_info()
+```
+
+[^1]: Breach-fill algorithm by Lindsay's paper (2016)
+    "Efficient hybrid breaching-filling sink removal methods
+    for flow path enforcement in digital elevation models:
+    Efficient Hybrid Sink Removal Methods for Flow Path
+    Enforcement: (Hydrological Processes 30, 846–857.
+    doi:10.1002/hyp.10648) -\>
+    `flowdem::comp_breach_lindsay2016(dem)`
