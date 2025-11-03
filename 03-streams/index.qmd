@@ -17,7 +17,7 @@ editor_options:
     wrap: 60
 ---
 
-## 3.0 Overview 
+## 3.0 Overview
 
 ### Environment Setup
 
@@ -337,7 +337,7 @@ tm03_live
 ## 3.3 Process DEM
 
 Additional conditioning algorithms are available within the
-`RichDEM` library [^1]
+`RichDEM` library [^index-1]
 
 ```{r}
 #| comment: NA
@@ -703,7 +703,7 @@ rayshader::render_highquality(
 devtools::session_info()
 ```
 
-[^1]: Breach-fill algorithm by Lindsay's paper (2016)
+[^index-1]: Breach-fill algorithm by Lindsay's paper (2016)
     "Efficient hybrid breaching-filling sink removal methods
     for flow path enforcement in digital elevation models:
     Efficient Hybrid Sink Removal Methods for Flow Path

@@ -401,3 +401,20 @@ total_effect  = dem_filled - dem_100m
 
 total_effect[total_effect == 0] <- NA
 total_log <- log10(total_effect + 0.01)  # +0.01 to handle small values
+
+
+
+
+whitebox::wbt_find_main_stem(
+  d8_pntr = "dem_chilwa_14_flow_direction_D8.tif",
+  streams = "dem_chilwa_19_streams_d8.tif",
+  output = "dem_chilwa_20_streams_trunk.tif",
+  wd = "../assets/TIF/"
+)
+
+
+
+watershed = sf::st_read("../assets/inputs/watershed_site.shp") |> 
+  dplyr::select("fid") |> sf::st_transform("EPSG:3857") |>
+  dplyr::rename(chilwa_basin = fid)
+
