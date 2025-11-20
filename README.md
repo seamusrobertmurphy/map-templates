@@ -1,83 +1,6 @@
 ------------------------------------------------------------------------
 
-```{r}
-#| warning: false
-#| message: false
-#| include: false
-#| echo: false
-#| comment: NA
-
-options(repos = c(CRAN = "https://cloud.r-project.org"),
-        htmltools.dir.version = FALSE, 
-        htmltools.preserve.raw = FALSE
-        )
-
-knitr::opts_chunk$set(
-  echo = TRUE, 
-  message = FALSE, 
-  warning = FALSE,
-  error = FALSE, 
-  comment = NA, 
-  tidy.opts = list(width.cutoff = 60)
-  ) 
-
-#install.packages("easypackages")
-#pak::pkg_install(c(
-#libs = c(
-easypackages::packages(
-  "bslib", 
-  "cols4all", "covr", "cowplot", 
-  "dendextend", "digest","DiagrammeR","dtwclust", "downlit", 
-  "e1071", "exactextractr","elevatr", 
-  "FNN", "future", 
-  "gdalcubes", "gdalUtilities", "geojsonsf", "geos", "ggplot2", "ggstats", 
-  "ggspatial", "ggmap", "ggplotify", "ggpubr", "ggrepel", "giscoR", 
-  "hdf5r", "httr", "httr2", "htmltools",
-  "jsonlite", 
-  "kohonen", 
-  "leaflet.providers", "leafem", "libgeos","luz","lwgeom", "leaflet", "leafgl",
-  "mapedit", "mapview", "maptiles", "methods", "mgcv", 
-  "ncdf4", "nnet", 
-  "openxlsx", "parallel", "plotly", 
-  "randomForest", "rasterVis", "raster", "Rcpp", "RcppArmadillo", 
-  "RcppCensSpatial","rayshader", "RcppEigen", "RcppParallel", 
-  "RColorBrewer", "reactable", "rgl", "rsconnect","RStoolbox", "rts", 
-  "s2", "sf", "scales", "sits","spdep", "stars", "stringr","supercells", 
-  "terra", "testthat", "tidyverse", "tidyterra","tools", 
-  "tmap", "tmaptools", "terrainr", 
-  "xgboost",
-  prompt = F)
-
-#installed_libs <- libs %in% rownames(installed.packages())
-#if(any(installed_libs == F)){install.packages(libs[!installed_libs])}
-#invisible(lapply(libs, library, character.only = T))
-
-#lib = .libPaths()[[1L]], upgrade = F, ask = F, dependencies = T)
-#mapviewOptions(fgb = FALSE)
-sf::sf_use_s2(use_s2 = FALSE)
-```
-
-```{css, echo=FALSE, class.source = 'foldable'}
-div.column {
-    display: inline-block;
-    vertical-align: top;
-    width: 50%;
-}
-
-#TOC::before {
-  content: "";
-  display: block;
-  height:200px;
-  width: 200px;
-  background-image: url('https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/01-site-map.png');
-  background-size: contain;
-  background-position: 50% 50%;
-  padding-top: 80px !important;
-  background-repeat: no-repeat;
-}
-```
-
-# [Terrain Mapping](https://seamusrobertmurphy.quarto.pub/map-templates)
+# [Terrain Mapping eBook](https://seamusrobertmurphy.quarto.pub/map-templates)
 
 This book provides a series templates and guides for deriving standard operational maps. The sequence of chapters was designed for data stream efficiency: site context establishes area-of-interest geometry, watershed delineation derives flow structure, stream delineation extracts hydrological features, topographic analysis conditions elevation data and computes terrain metrics, climate mapping interpolates environmental surfaces, and demographic mapping contextualizes human populations. Each stage reuses outputs from prior chapters, minimizing reprocessing and enabling iterative refinement of area-of-interest boundaries, coordinate systems, and spatial resolution.
 
@@ -111,12 +34,9 @@ Download census and settlement data. Interpolate population density. Classify se
 
 ------------------------------------------------------------------------
 
-### Gallery {.unnumbered}
+###### Gallery
 
-:::: {style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.1rem; margin: 0; padding: 0;"}
-::: {style="grid-column: span 2; margin: 0; padding: 0;"}
-![](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/03-locator-map.png)
-:::
+![](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/03-locator-map.png){width="100%"}
 
 ![](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/06-watershed-3D.png)
 
@@ -127,4 +47,3 @@ Download census and settlement data. Interpolate population density. Classify se
 ![](https://raw.githubusercontent.com/seamusrobertmurphy/forest-fire-risk-cffdrs/main/assets/PNG/temp.png)
 
 ![](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/04-population-map.png)
-::::
