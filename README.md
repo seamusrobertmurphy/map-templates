@@ -2,7 +2,7 @@
 
 # [Terrain Mapping eBook](https://seamusrobertmurphy.quarto.pub/map-templates)
 
-This book provides a series templates and guides for deriving standard operational maps. The sequence of chapters was designed for data stream efficiency: site context establishes area-of-interest geometry, watershed delineation derives flow structure, stream delineation extracts hydrological features, topographic analysis conditions elevation data and computes terrain metrics, climate mapping interpolates environmental surfaces, and demographic mapping contextualizes human populations. Each stage reuses outputs from prior chapters, minimizing reprocessing and enabling iterative refinement of area-of-interest boundaries, coordinate systems, and spatial resolution.
+This e-book provides a series of mapping templates and guides for deriving standard operational maps. The sequence of chapters was designed for data stream efficiency: site context establishes area-of-interest geometry, watershed delineation derives flow structure, stream delineation extracts hydrological features, topographic analysis conditions elevation data and computes terrain metrics, climate mapping interpolates environmental surfaces, and demographic mapping contextualizes human populations. Each stage reuses outputs from prior chapters, minimizing reprocessing and enabling iterative refinement of area-of-interest boundaries, coordinate systems, and spatial resolution.
 
 ------------------------------------------------------------------------
 
@@ -36,7 +36,7 @@ Download census and settlement data. Interpolate population density. Classify se
 
 ###### Gallery
 
-![](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/03-locator-map.png){width="100%"}
+![](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/03-locator-map.png)
 
 ![](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/06-watershed-3D.png)
 
