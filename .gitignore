@@ -4,11 +4,12 @@
 .Ruserdata
 
 /.quarto/
-/assets/inputs/
 .DS_Store
 
 *.dbf
 *.tif
+*.gdb
 
 .dbf
 .tif
+.gdb

@@ -29,7 +29,7 @@ citeproc: true
 #| comment: NA
 pacman::p_load(
   "bslib",
-  "cli", "cols4all", "covr", "cowplot",
+  "cli", "cols4all", "covr", "cowplot", "colorblindcheck",
   "dendextend", "digest", "DiagrammeR", 
   "dtwclust", "downlit",
   "exactextractr", "elevatr",
@@ -235,9 +235,9 @@ We acquired elevation data using the `elevatr` package
 Tiles and the Open Topography Global DEM API collections of
 global digital elevation models including SRTMGL3, SRTMGL1,
 AW3D30, and SRTM15Plus. Depending on source, `OSM`'s Slippy
-Tiling syntax[^index-1] is used where zoom represents number
-of vertical tiles counting from top-left corner in a
-Peudo-Mercator grid ([EPSG:3857](https://epsg.io/3857)).
+Tiling syntax[^1] is used where zoom represents number of
+vertical tiles counting from top-left corner in a
+Pseudo-Mercator grid ([EPSG:3857](https://epsg.io/3857)).
 
 At our study latitude, `zoom=11` returns approximately
 3-arc-second resolution (\~76m at the equator). We then
@@ -305,12 +305,21 @@ improving efficiency with in-memory operations.
 
 The `whitebox` workflow provides additional parameter
 controls with which we add a breaching constraint
-(`max_depth=3m)` and a `flat_increment` component to account
-for flat gradients at lowest elevations. The
+(`max_depth=3m)` and a slope component
+(`flat_increment=0.001)` to ensure monotonic descent along
+breach channels. This parameter-controlled approach enables
+selective breaching based on depression characteristics. The
 `flat_increment` parameter performs similar function as
 `epsilon` used in subsequent `flowdem::breach` operations,
-only with manual controls over gradient
-slope[@lindsay2016efficient].
+only with greater manual controls of the slope gradient
+[@lindsay2016efficient].
+
+Performance benchmarking reveals `whitebox` breaching
+completes in 2.3 seconds versus 8.8 seconds for `flowdem`,
+likely reflecting differences between compiled C++
+(WhiteboxTools) versus R-wrapped operations (RichDEM).
+However, flowdem's approach requires fewer parameters,
+facilitating rapid exploratory workflows.
 
 ```{r}
 #| warning: false
@@ -379,37 +388,111 @@ tmap::tm_shape(dem_breach_diff_wb) + tmap::tm_raster(values="Blues", title = "Ch
 tmap::tmap_arrange(tm_breach_fd, tm_breach_wb, nrow=1)
 ```
 
-![](/assets/MAP/breaching-compared.png)
+![](../assets/MAP/breaching-compared.png)
 
 Figure 2b: Maps comparing effects of breaching algorithms
 [@RichDEM; @lindsay2016efficient]. Both algorithms target
 similar depression features but with different modification
 magnitudes controlled by respective parameters.
 
+Table 2a: Runtime comparison of breaching algorithms applied
+to Lake Chilwa watershed DEM (100m resolution, \~1.3M cells)
+
+| Metric        | Whitebox | flowdem | Performance Ratio |
+|---------------|----------|---------|-------------------|
+| Elapsed time  | 2.30s    | 8.83s   | 3.8× faster       |
+| User CPU time | 0.01s    | 8.59s   | 859× faster       |
+| System time   | 0.01s    | 0.21s   | 21× faster        |
+
+The performance advantage of `whitebox` likely reflects
+architectural differences: `WhiteboxTools` implements
+breaching in compiled C++ with optimized spatial indexing,
+while `flowdem` wraps RichDEM operations through R
+interfaces that incur marshalling overhead. The high user
+CPU time in `flowdem` (97% of elapsed time) suggests
+computational delays in the R-wrapped priority-flood
+implementation, whereas `whitebox` delegates processing to
+external compiled binaries with minimal R overhead (0.4% of
+elapsed time).
+
+Despite longer execution times, `flowdem`'s parameter-free
+interface eliminates decisions about depth thresholds and
+flat increments, potentially reducing workflow development
+time for exploratory analyses. For production workflows
+requiring repeated processing or large spatial extents
+(\>10M cells), `whitebox`'s computational efficiency becomes
+increasingly critical.
+
+Both algorithms targeted similar depression features across
+the study area (Figure 2b), though with different
+modification patterns. `Whitebox`'s `max_depth` constraint
+preserved deeper basin structures (\>3m) while breaching
+shallow artifacts, producing elevation changes ranging from
+-10m to +10m in modified areas. `Flowdem`'s uniform
+breaching approach modified a broader spatial extent without
+depth discrimination, resulting in elevation changes up to
+±100m in some locations. The hybrid nature of Lindsay's
+algorithm, which combines selective breaching with
+subsequent filling, highlights `whitebox`'s more
+conservative modifications. In contrast, the priority-flood
+approach in RichDEM implements aggressive breaching to
+ensure complete depression removal [@barnes2014priority],
+which may be undesirable when preserving hydrological
+features like endorheic basins.
+
+------------------------------------------------------------
+
 ### 2.3.2 Depression Filling
 
-In Lake Chilwa's endorheic basin, water accumulates via
-inflow and evaporation without surface outflow. This
-presents statistical challenges for standard watershed
-algorithms [@o1984extraction], which are typically designed
-to expect exorheic systems and outlet pour points as inputs
-[@wu2015localized]. We adapted our workflow to handle this
-closed basin by identifying terminal sinks near maximum flow
-values, enabling internal sub-basin delineation.
+Following breaching, remaining flat areas require treatment
+to ensure continuous flow paths. This step is particularly
+critical for endorheic basins like Lake Chilwa, where water
+accumulates through inflow and evaporation without surface
+outflow. Standard watershed algorithms typically assume
+exorheic drainage systems with defined outlet points
+[@wu2015localized; @o1984extraction]. For closed basins,
+depression filling must preserve the terminal sink while
+ensuring flow connectivity throughout the contributing
+watershed.
 
--   Hydraulic breaching and filling,
--   D8 Flow direction and accumulation,
--   Depression network characterization,
--   Derive terminal drainage points,
--   Delineate watershed and streams.
+`flowdem` implementation uses epsilon-gradient filling via
+`fill(epsilon=T)`. This function adds infinitesimal
+elevation increments (typically 10⁻⁶ to 10⁻⁴ m) to flat
+surfaces, ensuring strict monotonic descent along flow paths
+[@barnes2014priority]. The epsilon value also prevents
+ambiguous flow directions in perfectly flat terrain common
+to marshland environments surrounding endorheic lakes.
+Critically, the algorithm preserves major depressions like
+Lake Chilwa while establishing flow pathways toward this
+terminal sink.
 
-Using the `flowdem` package, we applied an epsilon-gradient
-filling via `flowdem::fill()` to ensure continuous flow
-through flat areas by adding infinitesimal elevation
-increments. Meanwhile, the `whitebox` workflow uses Wang &
-Liu's scan-line algorithm [@wang2006efficient] via
-`wbt_fill_depressions_wang_and_liu()` to smooth remaining
-flats in low-relief terrain.
+`whitebox` implementation applies the scan-line algorithm
+[@wang2006efficient] via
+`wbt_fill_depressions_wang_and_liu()` function. This method
+uses an efficient line-by-line approach optimized for
+low-relief terrain, filling remaining depressions after the
+initial breaching operation. When combined with conservative
+breaching (`max_depth=3m`), this two-step approach maintains
+the integrity of genuine hydrological features while
+removing artifacts that would fragment the drainage network.
+
+The challenge for endorheic systems is distinguishing
+between genuine terminal sinks requiring preservation and
+spurious depressions requiring removal. Our approach
+addresses this through:
+
+1.  Conservative breaching: Using depth constraints to
+    preserve deep basins while removing shallow artifacts
+2.  Selective filling: Applying fill operations to remaining
+    flat areas without eliminating the primary drainage
+    terminus
+3.  Flow direction validation: Ensuring all cells establish
+    flow paths toward the identified terminal sink
+
+This conditioning strategy enables subsequent flow
+accumulation to correctly identify Lake Chilwa as the
+watershed's convergence point rather than fragmenting
+drainage into multiple isolated depressions.
 
 ```{r}
 #| warning: false
@@ -455,18 +538,20 @@ dem_fill_diff_fd[dem_fill_diff_fd == 0] <- NA
 dem_fill_diff_wb[dem_fill_diff_wb == 0] <- NA
 
 tmap::tmap_mode("view")
-tmap::tm_shape(dem_fill_diff_fd) + tmap::tm_raster(values="RdYlBu", title = "Change (m)",
-    breaks = c(-400, -100, -10, 0, 10, 100, 400),
-    labels = c("-400 to -100", "-100 to -10", "-10 to 0", "0 to 10", "10 to 100", ">100")) +
+tmap::tm_shape(dem_fill_diff_fd) + tmap::tm_raster(
+  palette = "pi_yg",, title = "Change (m)", midpoint = 0,
+  breaks = c(-400, -100, -10, 0, 10, 100, 400),
+  labels = c("-400 to -100", "-100 to -10", "-10 to 0", "0 to 10", "10 to 100", ">100")) +
   tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size = .5) +
   tmap::tm_layout(legend.text.size = 0.5, legend.title.size = 0.7) +
 #  tmap::tm_compass(color.dark="gray60",position=c("RIGHT", "top")) +
 #  tmap::tm_graticules(lines=T,labels.rot=c(0,90),lwd=0.2) +
   tmap::tm_title("Filling Effects (Barnes, 2016)", size=.8) -> tm_fill_fd
 
-tmap::tm_shape(dem_fill_diff_wb) + tmap::tm_raster(values="RdYlBu", title = "Change (m)",
-    breaks = c(-400, -100, -10, 0, 10, 100, 400),
-    labels = c("-400 to -100", "-100 to -10", "-10 to 0", "0 to 10", "10 to 100", ">100")) +
+tmap::tm_shape(dem_fill_diff_wb) + tmap::tm_raster(
+  palette = "pi_yg",, title = "Change (m)", midpoint = 0,
+  breaks = c(-400, -100, -10, 0, 10, 100, 400),
+  labels = c("-400 to -100", "-100 to -10", "-10 to 0", "0 to 10", "10 to 100", ">100")) +
   tmap::tm_layout(legend.text.size = 0.5, legend.title.size = 0.7) +
   tmap::tm_scalebar(position=c("RIGHT", "BOTTOM"), text.size = .5) +
 #  tmap::tm_compass(color.dark="gray60",position=c("RIGHT", "top")) +
@@ -476,10 +561,44 @@ tmap::tm_shape(dem_fill_diff_wb) + tmap::tm_raster(values="RdYlBu", title = "Cha
 tmap::tmap_arrange(tm_fill_fd, tm_fill_wb, nrow=1)
 ```
 
-![](/assets/MAP/filling-compared.png)
+![](../assets/MAP/filling-compared.png)
 
 Figure 2c: Interactive maps comparing effects of filling
 algorithms [@wang2006efficient; @lindsay2016efficient].
+
+Depression filling showed similar performance patterns to
+breaching (Table 2a). `Whitebox` completed filling in 2.0
+seconds compared to 3.4 seconds for `flowdem`, representing
+a 1.7× speedup. Both algorithms maintained low system
+overhead, though `flowdem` again showed higher user CPU
+consumption.
+
+Table 2b: Runtime comparison of filling algorithms
+
+| Metric        | Whitebox | flowdem | Performance Ratio |
+|---------------|----------|---------|-------------------|
+| Elapsed time  | 2.01s    | 3.42s   | 1.7× faster       |
+| User CPU time | 0.01s    | 3.36s   | 336× faster       |
+| System time   | 0.01s    | 0.05s   | 5× faster         |
+
+The more modest performance difference compared to breaching
+(1.7× vs 3.8×) suggests Wang and Liu's scan-line algorithm
+and RichDEM's epsilon-gradient method have comparable
+computational complexity, with efficiency differences
+primarily attributable to implementation architecture rather
+than algorithmic approaches.
+
+Both filling algorithms effectively smoothed flat areas
+while preserving Lake Chilwa's endorheic basin structure
+(Figure 2c). `Whitebox` modifications concentrated along
+identified flat areas with conservative elevation
+adjustments (-10m to +10m), while `flowdem` produced more
+extensive modifications (up to ±100m) across broader spatial
+extents. The resulting elevation models from both methods
+achieved hydrological connectivity, though through different
+numerical pathways.
+
+------------------------------------------------------------
 
 ## 2.4 Flow Accumulation
 
@@ -494,6 +613,22 @@ cells contributing flow to each location. At 100m
 resolution, each cell represents 0.01 km² (1 hectare) of
 contributing area, enabling direct conversion between cell
 counts and drainage area in km².
+
+Flow accumulation calculations reveal critical differences
+between workflows. `Whitebox` achieves maximum accumulation
+of 1,152,591 cells (11,526 km²), indicating successful
+watershed-scale convergence to Lake Chilwa. In contrast,
+flowdem produces maximum accumulation of only 5,017 cells
+(50.2 km²), suggesting potential flow routing issues or
+incomplete drainage network development. This 230×
+difference warrants investigation, as both workflows used
+identical D8 algorithms and spatial resolution.
+
+Runtime performance shows comparable efficiency: `whitebox`
+completes flow direction and accumulation in 2.0 seconds
+versus 2.8 seconds for `flowdem`, indicating both
+implementations efficiently handle D8 calculations at 100m
+resolution across the study extent.
 
 ```{r}
 #| warning: false
@@ -574,18 +709,22 @@ tmap::tm_shape(dem_acc_fd) + tmap::tm_raster(
 tmap::tmap_arrange(tm_acc_wb, tm_acc_fd, nrow=1)
 ```
 
-![](/assets/MAP/flow-accumulation-compared.png)
+![](../assets/MAP/flow-accumulation-compared.png)
 
 Figure 2d: Maps comparing flow accumulation results derived
 from `whitebox` (left) and `flowdem` workflows (right).
 
-## 2.5 Stochastic Sink Analysis
+## 2.5 Stochastic Depression Analysis
 
 Given the technical challenges of delineating endorheic
 watersheds without surface outflows, we apply several
 additional checks below. Specifically, we attempt to
 characterize depression structures with complementary
-topographic metrics to account for DEM uncertainty.
+topographic metrics to account for DEM uncertainty. Specific
+to this study area, the stochastic approach provides
+necessary confidence estimates for depression features,
+which is critical for distinguishing Lake Chilwa's genuine
+endorheic basin from spurious artifacts.
 
 Surface depressions in DEMs contain inherent uncertainty
 from acquisition artifacts, interpolation errors, and
@@ -602,20 +741,16 @@ LiDAR RMSE. For our 100m DEM derived from multiple sources,
 we estimate RMSE conservatively at 3m based on vertical
 accuracy specifications for SRTM data.
 
-With each iteration, random samples are drawn from the
-Gaussian error PDF and added to the original DEM.
-Depressions in the error-added DEM are filled using Wang and
-Liu's efficient algorithm [@wang2006efficient], and affected
-cells are flagged cumulatively. Depressions identified in
-≥80% of iterations are classified as "true depressions"
-rather than artifacts.
-
 We apply 50 iterations following established protocols
-[@lindsay2005removal], balancing computational efficiency
-with detection reliability. This stochastic approach
-provides confidence estimates for depression features,
-critical for distinguishing Lake Chilwa's genuine endorheic
-basin from spurious artifacts.
+[@lindsay2005removal]. With each iteration, random samples
+are drawn from the Gaussian error PDF and added to the
+original DEM. Depressions in the error-added DEM are filled
+using Wang and Liu's efficient algorithm
+[@wang2006efficient], and affected cells are flagged
+cumulatively. We classify depressions appearing in ≥80% of
+iterations as "true depressions" following Lindsay & Creed
+[@lindsay2006distinguishing], providing 95% confidence that
+identified features are not artifacts of DEM error.
 
 ```{r}
 #| warning: false
@@ -777,17 +912,54 @@ topographic wetness index scores.
 ## 2.6 Terminal Pour Points
 
 Endorheic basins require identification of terminal drainage
-points confirming the ultimate surface flow outlet
+points representing the ultimate destination of surface flow
 [@lehner2022global; @zhang2020national] [@li2025enhanced].
-We locate these adjacent maximum flow accumulation within
-the lake basin where convergence exceeds 0.5 million cells,
-confirming watershed-scale drainage convergence.
+Unlike exorheic systems with defined outlet pour points,
+closed basins necessitate locating the convergence point of
+all inflowing drainage.
 
-We test single-point and multi-point configurations to
-assess delineation sensitivity to outlet placement in flat
-terrain. Points are digitized interactively using flow
-accumulation as reference, then saved for workflow
-reproducibility.
+We identify terminal points adjacent to maximum flow
+accumulation within the Lake Chilwa basin. Flow accumulation
+analysis reveals a critical difference between workflows:
+`whitebox` achieves maximum accumulation of 1,152,591 cells
+(11,526 km²), indicating successful watershed-scale
+convergence, while flowdem produces only 5,017 cells (50.2
+km²), suggesting incomplete drainage network development.
+This 230-fold discrepancy indicates the `flowdem` workflow
+requires troubleshooting before terminal point
+identification.
+
+Proceeding with the `whitebox`-derived flow accumulation, we
+locate terminal points where convergence exceeds 1,000,000
+cells, confirming watershed-scale drainage integration
+(Figure 2g). We test both single-point and multi-point
+configurations to assess delineation sensitivity to outlet
+placement in flat terrain. Points are digitized
+interactively using the flow accumulation raster as
+reference, positioning outlets at local maxima within the
+lake basin where multiple drainage pathways converge. The
+multi-point configuration places four terminal points around
+the lake perimeter to capture distributed inflow patterns
+characteristic of endorheic systems with extensive shallow
+margins.
+
+Terminal points were identified through the following
+workflow: 
+
+-   Visual inspection: Examine flow accumulation raster to
+    identify convergence zones exceeding 1,000,000 cells
+-   Point placement: Use `mapedit::editMap()` to enable
+    rapid digitization of pour points at accumulation maxima
+-   Multi-point validation: Add supplementary points around
+    lake perimeter to test sensitivity to outlet
+    configuration
+-   Reproducibility: Save point locations as shapefiles for
+    workflow replication
+
+The resulting terminal points establish the drainage
+terminus for watershed delineation, enabling the
+`flowdem::watershed()` function to trace all contributing
+areas converging on Lake Chilwa.
 
 ```{r}
 #| warning: false
@@ -894,7 +1066,7 @@ streams = terra::crop(
   streams, watershed, mask=T)
 
 # Visual check
-ttmap::tmap_mode("view")
+tmap::tmap_mode("view")
 tmap::tm_shape(watershed) + tmap::tm_borders(col = "blue", lwd = 2) +
   tmap::tm_shape(streams) + tmap::tm_lines(col = "royalblue", lwd=0.8) +
   tmap::tm_shape(lake) + tmap::tm_polygons(fill = "royalblue") +
@@ -965,7 +1137,7 @@ tmap::tm_shape(watershed_test) + tmap::tm_borders(col = "blue", lwd = 2) +
 tmap::tmap_arrange(tm_watershed_fd, tm_watershed_test, nrow=1)
 ```
 
-![](/assets/MAP/waatershed-flowdem-compared.png){fig-align="center"}
+![](../assets/MAP/waatershed-flowdem-compared.png){fig-align="center"}
 
 Figure 2h: Map illustrating watershed delineation derived in
 flowdem
@@ -982,6 +1154,13 @@ ephemeral channels in marshland, then filter streams shorter
 than 200m to remove artifacts while preserving primary
 drainage structure. Main stem identification isolates trunk
 channels for hydrological modeling applications.
+
+Stream ordering follows Strahler's method
+[@strahler1957quantitative], where first-order streams have
+no tributaries, and stream order increases when two streams
+of equal order merge. We retain streams of order ≥3,
+representing primary drainage channels with contributing
+areas \>10 km².
 
 ```{r}
 #| warning: false
@@ -1001,7 +1180,7 @@ whitebox::wbt_extract_streams(
   )
 
 whitebox::wbt_remove_short_streams(
-  d8_pntr = "dem_chilwa_13_flow_direction_D8.tif",  # CORRECTED: use 13, not 14
+  d8_pntr = "dem_chilwa_13_flow_direction_D8.tif",  
   streams = "dem_chilwa_18_streams_sensitive.tif",
   output = "dem_chilwa_19_streams_filtered.tif",
   wd = "../assets/TIF/",
@@ -1049,8 +1228,6 @@ streams_major_sf = st_intersection(streams_major_sf, watershed) |>
 sf::st_write(streams_major_sf, delete_dsn=T,
   "../assets/SHP/dem_chilwa_21_streams_strahler.shp")
 ```
-
-.
 
 ```{r}
 #| warning: false
@@ -1325,7 +1502,6 @@ rayshader::render_highquality(
 watershed](https://raw.githubusercontent.com/seamusrobertmurphy/map-templates/refs/heads/main/assets/outputs/06-watershed-3D.png){fig-align="center"
 width="100%"}
 
-
 ### Runtime Log
 
 ```{r session-info}
@@ -1333,4 +1509,4 @@ width="100%"}
 devtools::session_info()
 ```
 
-[^index-1]: <https://wiki.openstreetmap.org/wiki/Slippy_map>
+[^1]: <https://wiki.openstreetmap.org/wiki/Slippy_map>
